@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Farmer extends Model
  {
-	protected $fillable = ["display_name","type","status"];
+	protected $fillable = ["uuid","display_name","type","status"];
 
     //
 }

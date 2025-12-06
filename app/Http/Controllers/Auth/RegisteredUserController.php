@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Core\Farmer;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
@@ -22,12 +24,17 @@ class RegisteredUserController extends Controller
     public function store(Request $request): Response
     {
         $request->validate([
+
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'max:15'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', Rules\Password::defaults()],
+            'password' => ['required', Rules\Password::defaults(),
+            'farm_name' => ['required','string','max:255'],
+             'farm_type' => ['required','in:individual,group,organization'],
+            ],
         ]);
 
+        DB::beginTransaction();
         $user = User::create([
             'uuid' => Str::orderedUuid(),
             'name' => $request->name,
@@ -37,6 +44,15 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->string('password')),
         ]);
 
+        $farmer = Farmer::create([
+            'uuid' => Str::orderedUuid(),
+            'display_name' => $request->string('farm_name'),
+            'type' => $request->string('farm_type'),
+        ]);
+
+        $user->farmers()->attach($farmer->id);
+
+        DB::commit();
         event(new Registered($user));
 
         Auth::login($user);
