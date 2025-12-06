@@ -11,13 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('farmers', function (Blueprint $table) {
+        Schema::create('farmer_users', function (Blueprint $table) {
             $table->id();
-            $table->uuid()->unique();
-			$table->string('display_name');
-			$table->enum('type',['individual','group','organization'])->default('individual');
-            $table->string('registration_number')->nullable();
-            $table->string('address')->nullable();
+			$table->unsignedBigInteger('farmer_id');
+			$table->unsignedBigInteger('user_id');
+			$table->enum('role',['owner','manager','staff'])->default('staff');
 			$table->tinyInteger('status')->default(1);
             $table->timestamps();
         });
@@ -28,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('farmers');
+        Schema::dropIfExists('farmer_users');
     }
 };
