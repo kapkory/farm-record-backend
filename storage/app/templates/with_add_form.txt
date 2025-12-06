@@ -1,0 +1,28 @@
+@extends('layouts.dashboard')
+
+@section('bread_crumb')
+    <li class="breadcrumb-item active">{umodels}</li>
+@endsection
+
+@section('title') {umodels} @endsection
+@section('header_action')
+    <a href="#{model}_modal" class="btn btn-primary btn-sm clear-form" data-bs-toggle="modal"><i class="zmdi-hc-lg fa fa-plus"></i> ADD {cmodel}</a>
+@endsection
+@section('content')
+
+            <div class="card">
+                <div class="card-body">
+
+    @include('common.bootstrap_table_ajax',[
+    'table_headers'=>["id",{model_fields},"action"],
+    'data_url'=>'{route_url}/list',
+    'base_tbl'=>'{models}'
+    ])
+
+    </div>
+
+ </div>
+
+
+
+@endsection

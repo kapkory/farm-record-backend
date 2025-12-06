@@ -1,0 +1,6 @@
+<?php
+$controller =\App\Http\Controllers\{controller}::class;
+Route::get('/',[$controller,'index']);
+Route::post('/',[$controller,'store{umodel}']);
+Route::get('/list',[$controller,'list{umodels}']);
+Route::delete('/delete/{{model}}',[$controller,'destroy{umodel}']);

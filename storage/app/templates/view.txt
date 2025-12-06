@@ -1,0 +1,29 @@
+@extends('layouts.dashboard')
+
+@section('title') {umodels} @endsection
+@section('bread_crumb')
+    <li class="breadcrumb-item active" aria-current="page">{umodels}</li>
+@endsection
+@section('header_action')
+        <a href="#{model}_modal" class="btn btn-info btn-sm clear-form float-end" data-bs-toggle="modal"><i class="fa fa-plus"></i> ADD {cmodel}</a>
+@endsection
+@section('content')
+
+            <div class="card">
+                <div class="card-body">
+                    @include('common.bootstrap_table_ajax',[
+                    'table_headers'=>["id",{model_fields},"action"],
+                    'data_url'=>'{route_url}/list',
+                    'base_tbl'=>'{models}'
+                    ])
+                    @include('common.auto_modal',[
+                        'modal_id'=>'{model}_modal',
+                        'modal_title'=>'{cmodel} FORM',
+                        'modal_content'=>autoForm(\App\{model_namespace}::class,"{route_url}")
+                    ])
+                 </div>
+             </div>
+
+@endsection
+
+

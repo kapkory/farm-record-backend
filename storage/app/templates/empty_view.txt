@@ -1,0 +1,11 @@
+@extends('layouts.admin_front')
+
+@section('title')
+    {title}
+@endsection
+@section('bread_crumb')
+    <li class="breadcrumb-item active" aria-current="page"> {title}</li>
+@endsection
+@section('content')
+
+@endsection
