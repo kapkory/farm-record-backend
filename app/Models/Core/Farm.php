@@ -3,8 +3,10 @@
 namespace App\Models\Core;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 
 class Farm extends Model
 {
@@ -37,6 +39,18 @@ class Farm extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class);
+    }
+
+    /**
+     * Scope a filter farms based on farm users.
+     */
+    #[Scope]
+    protected function farmerOwned(Builder $query,$userId): void{
+         $query->whereIn('farmer_id',function ($query) use ($userId){
+            $query->select('farmer_id')
+                ->from('farmer_users')
+                ->where('user_id',$userId);
+        });
     }
 }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\v1\Farms;
 
 use App\Http\Controllers\Controller;
 use App\Models\Core\Farm;
+use App\Repositories\SearchRepo;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -21,9 +22,20 @@ class FarmsController extends Controller
     {
         // simple pagination; adjust per requirements
         $perPage = (int) $request->query('per_page', 15);
-        $farms = Farm::paginate($perPage);
+        $farms = Farm::leftJoin('farmers','farmers.id','farms.farmer_id')
+                ->farmerOwned(5)
+                ->select('farms.*','farmers.display_name as owner');
+//                ->get();
+//        dd($farms);
 
-        return $this->successResponse($farms, 'Farms retrieved successfully', 200);
+         if (\request('all'))
+            return $farms->get();
+        return SearchRepo::of($farms)
+            ->addColumn('status', function ($farm) {
+                return $farm->status == 1 ? 'active' : 'inactive';
+            })
+            ->make();
+
     }
 
     /**
