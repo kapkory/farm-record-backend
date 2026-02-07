@@ -96,4 +96,19 @@ class VarietiesController extends Controller
     {
         return $this->listVarieties($request);
     }
+
+    public function delete(string $varietyUuid)
+    {
+        $variety = CropVariety::where('uuid', $varietyUuid)->first();
+        if (! $variety) {
+            return $this->errorResponse('Crop variety not found', 404);
+        }
+
+        try {
+            $variety->delete();
+            return $this->successResponse(null, 'Crop variety deleted successfully', 200);
+        } catch (\Throwable $e) {
+            return $this->errorResponse('Failed to delete crop variety', 500, ['exception' => $e->getMessage()]);
+        }
+    }
 }
