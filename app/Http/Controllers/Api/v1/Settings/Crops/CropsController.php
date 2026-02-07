@@ -47,7 +47,22 @@ class CropsController extends Controller
 
     public function listCrops()
     {
-        $cropTypes = Crop::select('id','name','description')->get();
+        $cropTypes = Crop::select('id','uuid','name','description')->get();
         return $this->successResponse($cropTypes, 'Crop retrieved successfully', 200);
+    }
+
+    public function delete($cropUuid)
+    {
+        $crop = Crop::where('uuid', $cropUuid)->first();
+        if (! $crop) {
+            return $this->errorResponse('Crop not found', 404);
+        }
+
+        try {
+            $crop->delete();
+            return $this->successResponse(null, 'Crop deleted successfully', 200);
+        } catch (\Throwable $e) {
+            return $this->errorResponse('Failed to delete crop', 500, ['exception' => $e->getMessage()]);
+        }
     }
 }
