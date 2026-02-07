@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api\v1\Settings\Crops;
 
 use App\Http\Controllers\Controller;
-use App\Models\Core\CropType;
+use App\Models\Core\Crop;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class CropTypesController extends Controller
+class CropsController extends Controller
 {
     use ApiResponse;
     public function create(Request $request, $cropUuid = null)
@@ -19,35 +19,35 @@ class CropTypesController extends Controller
         ]);
 
         try{
-            $existing = CropType::where('name', request('name'))->first();
+            $existing = Crop::where('name', request('name'))->first();
             if ($existing) {
                 if ($cropUuid && $existing->uuid == $cropUuid) {
                     // If updating and the name belongs to the same crop type, allow it
-                    $cropType = CropType::updateOrCreate(['uuid' => $cropUuid], [
+                    $cropType = Crop::updateOrCreate(['uuid' => $cropUuid], [
                         'uuid' => Str::orderedUuid(),
                         'name' => request('name'),
                         'description' => request('description'),
                     ]);
-                    return $this->successResponse($cropType, 'Crop type updated successfully', 201);
+                    return $this->successResponse($cropType, 'Crop updated successfully', 201);
                 } else {
-                    return $this->errorResponse('Crop type with this name already exists', 409);
+                    return $this->errorResponse('Crop with this name already exists', 409);
                 }
             }
 
-            $cropType = CropType::create([
+            $cropType = Crop::create([
                 'uuid' => Str::orderedUuid(),
                 'name' => request('name'),
                 'description' => request('description'),
             ]);
-            return $this->successResponse($cropType, 'Farm created successfully', 201);
+            return $this->successResponse($cropType, 'Crop created successfully', 201);
         } catch (\Throwable $e) {
-             return $this->errorResponse('Failed to create farm', 500, ['exception' => $e->getMessage()]);
+             return $this->errorResponse('Failed to create crop', 500, ['exception' => $e->getMessage()]);
         }
     }
 
-    public function listCropTypes()
+    public function listCrops()
     {
-        $cropTypes = CropType::select('id','name','description')->get();
-        return $this->successResponse($cropTypes, 'Crop types retrieved successfully', 200);
+        $cropTypes = Crop::select('id','name','description')->get();
+        return $this->successResponse($cropTypes, 'Crop retrieved successfully', 200);
     }
 }
