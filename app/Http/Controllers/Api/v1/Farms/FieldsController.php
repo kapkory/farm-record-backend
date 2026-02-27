@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1\Farms;
 
 use App\Http\Controllers\Controller;
+use App\Models\Core\Farm;
 use App\Models\Core\Field;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -15,16 +16,18 @@ class FieldsController extends Controller
     /**
      * Create or update a field.
      */
-    public function create(Request $request, $fieldUuid = null)
+    public function create(Request $request)
     {
         $request->validate([
-            'farm_id' => 'required|integer|exists:farms,id',
-            'name' => 'required|string|max:255|unique:fields,name,NULL,id,farm_id,' . request('farm_id'),
-            'size' => 'integer|nullable',
+            'farm_uuid' => 'required|uuid|exists:farms,uuid',
+            'name' => 'required|string|max:255',
+            'size' => 'numeric|nullable',
             'description' => 'string|nullable',
         ]);
 
         try {
+            $fieldUuid = $request->uuid;
+            $farmId = Farm::where('uuid', $request->input('farm_uuid'))->first()->id;
             if ($fieldUuid) {
                 // Update existing field
                 $field = Field::where('uuid', $fieldUuid)->first();
@@ -33,10 +36,10 @@ class FieldsController extends Controller
                 }
 
                 $field->update([
-                    'farm_id' => $request->input('farm_id'),
                     'name' => $request->input('name'),
                     'size' => $request->input('size'),
                     'description' => $request->input('description'),
+                    'is_active' => $request->input('status') == 'active',
                 ]);
 
                 return $this->successResponse($field, 'Field updated successfully', 200);
@@ -44,7 +47,7 @@ class FieldsController extends Controller
 
             // Check if field with same name exists in the same farm
             $existing = Field::where('name', $request->input('name'))
-                ->where('farm_id', $request->input('farm_id'))
+                ->where('farm_id', $farmId)
                 ->first();
 
             if ($existing) {
@@ -53,11 +56,11 @@ class FieldsController extends Controller
 
             $field = Field::create([
                 'uuid' => Str::orderedUuid(),
-                'farm_id' => $request->input('farm_id'),
+                'farm_id' => $farmId,
                 'name' => $request->input('name'),
                 'size' => $request->input('size'),
                 'description' => $request->input('description'),
-                'is_active' => true,
+                'is_active' => $request->input('status') == 'active',
             ]);
 
             return $this->successResponse($field, 'Field created successfully', 201);
@@ -69,12 +72,13 @@ class FieldsController extends Controller
     /**
      * List all fields, optionally filtered by farm_id.
      */
-    public function listFields(Request $request)
+    public function listFields(Request $request, $farm_uid = null)
     {
         $query = Field::select('id', 'uuid', 'farm_id', 'name', 'size', 'description', 'is_active');
 
-        if ($request->filled('farm_id')) {
-            $query->where('farm_id', $request->input('farm_id'));
+        if ($farm_uid) {
+            $farmId = Farm::where('uuid', $farm_uid)->first()->id;
+            $query->where('farm_id', $farmId);
         }
 
         $fields = $query->orderBy('name')->get();

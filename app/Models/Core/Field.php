@@ -21,7 +21,7 @@ class Field extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'size' => 'integer',
+        'size' => 'decimal:2',
     ];
 
     /**

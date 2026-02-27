@@ -16,7 +16,7 @@ return new class extends Migration
             $table->uuid()->unique();
 			$table->unsignedBigInteger('farm_id');
 			$table->string('name');
-			$table->integer('size');
+			$table->decimal('size',10,2)->unsigned()->nullable();
 			$table->text('description')->nullable();
 			$table->boolean('is_active')->default(true);
             $table->softDeletes();
