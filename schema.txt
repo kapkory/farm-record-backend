@@ -1,0 +1,122 @@
+-- Farms
+CREATE TABLE farms (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    location VARCHAR(255),
+    size DECIMAL(10,2),
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+
+-- Fields
+CREATE TABLE fields (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    farm_id BIGINT,
+    name VARCHAR(255),
+    size DECIMAL(10,2),
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE
+);
+
+-- Crops
+CREATE TABLE crops (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    type ENUM('annual','perennial') DEFAULT 'annual',
+    days_to_maturity INT,
+    harvest_interval_days INT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+
+-- Plantings
+CREATE TABLE plantings (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    farm_id BIGINT,
+    field_id BIGINT NULL,
+    crop_id BIGINT,
+    planting_date DATE,
+    expected_harvest_date DATE NULL,
+    actual_harvest_date DATE NULL,
+    quantity_planted DECIMAL(10,2) NULL,
+    purpose ENUM('commercial','consumption','mixed') DEFAULT 'commercial',
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE,
+    FOREIGN KEY (field_id) REFERENCES fields(id) ON DELETE SET NULL,
+    FOREIGN KEY (crop_id) REFERENCES crops(id) ON DELETE CASCADE
+);
+
+-- Harvests (polymorphic: crops or livestock products)
+CREATE TABLE harvests (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    harvestable_id BIGINT,
+    harvestable_type VARCHAR(255),
+    quantity DECIMAL(10,2),
+    harvest_date DATE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+
+-- Sales (polymorphic: harvests, livestock, livestock products)
+CREATE TABLE sales (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    saleable_id BIGINT,
+    saleable_type VARCHAR(255),
+    quantity DECIMAL(10,2),
+    unit_price DECIMAL(10,2),
+    date DATE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+
+-- Expenses (polymorphic: farm, field, planting, harvest, livestock, etc.)
+CREATE TABLE expenses (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    expenseable_id BIGINT,
+    expenseable_type VARCHAR(255),
+    description VARCHAR(255),
+    amount DECIMAL(10,2),
+    date DATE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+
+-- Consumptions (polymorphic: harvests, livestock products)
+CREATE TABLE consumptions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    consumable_id BIGINT,
+    consumable_type VARCHAR(255),
+    quantity DECIMAL(10,2),
+    date DATE,
+    used_for VARCHAR(255) NULL, -- household, livestock feed, etc.
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+
+-- Livestock
+CREATE TABLE livestock (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    farm_id BIGINT,
+    species VARCHAR(255), -- cow, goat, chicken
+    breed VARCHAR(255),
+    birth_date DATE,
+    purchase_price DECIMAL(10,2) NULL,
+    status ENUM('alive','sold','dead') DEFAULT 'alive',
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE
+);
+
+-- Livestock Products (milk, eggs, manure, wool, etc.)
+CREATE TABLE livestock_products (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    livestock_id BIGINT,
+    type VARCHAR(255), -- milk, eggs, manure
+    quantity DECIMAL(10,2),
+    date DATE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (livestock_id) REFERENCES livestock(id) ON DELETE CASCADE
+);
