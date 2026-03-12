@@ -65,20 +65,21 @@ class PlantingsController extends Controller
     /**
      * return planting values
      */
-    public function listPlantings(){
-        $plantings = Planting::where([
-            ['id','>',0]
-        ]);
-        if(\request('all'))
-            return $plantings->get();
-        return SearchRepo::of($plantings)
-            ->addColumn('action',function($planting){
-                $str = '';
-                $json = json_encode($planting);
-                $str.='<a href="#" data-model="'.htmlentities($json, ENT_QUOTES, 'UTF-8').'" onclick="prepareEdit(this,\'planting_modal\');" class="btn badge btn-info btn-sm"><i class="fa fa-edit"></i> Edit</a>';
-            //    $str.='&nbsp;&nbsp;<a href="#" onclick="deleteItem(\''.url(request()->user()->role.'/plantings/delete').'\',\''.$planting->id.'\');" class="btn badge btn-outline-danger btn-sm"><i class="fa fa-trash"></i> Delete</a>';
-                return $str;
-            })->make();
+    public function listPlantings($farm_uuid = null){
+//        return ["hello"];
+        $query = Planting::leftJoin('crops', 'crops.id', '=', 'plantings.crop_id')
+            ->leftJoin('crop_varieties', 'crop_varieties.id', '=', 'plantings.crop_variety_id')
+            ->leftJoin('fields', 'fields.id', '=', 'plantings.field_id')
+        ->select('plantings.id', 'plantings.uuid', 'plantings.farm_id', "date_planted","purpose","crops.name as crop",
+            "crop_varieties.name as variety","fields.name as field",
+            "expected_harvest_date","actual_harvest_date","quantity_planted","plantings.created_at");
+        if ($farm_uuid) {
+            $farmId = Farm::where('uuid', $farm_uuid)->first()->id;
+            $query->where('plantings.farm_id', $farmId);
+        }
+
+        $plantings = $query->orderBy('created_at')->get();
+        return $this->successResponse($plantings, 'Fields retrieved successfully', 200);
     }
 
     /**
