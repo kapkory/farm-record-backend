@@ -1,11 +1,4 @@
-        /**
-         * return {model}'s index view
-         */
-    public function index(){
-        return view($this->folder.'index',[
 
-        ]);
-    }
 
     /**
      * store {model}
