@@ -11,16 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('transaction_categories', function (Blueprint $table) {
+        Schema::create('ledger_accounts', function (Blueprint $table) {
             $table->id();
 			$table->uuid();
 			$table->string('name');
 			$table->string('slug');
-			$table->enum('type',['income','expense']);
+			$table->enum('type',['asset','liability','equity','revenue','expense']);
 			$table->text('description')->nullable();
 			$table->boolean('is_system')->default(false);
 			$table->unsignedTinyInteger('status')->default(1);
             $table->unsignedBigInteger('parent_id')->nullable();
+            $table->unsignedBigInteger('farmer_id')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->softDeletes();
             $table->timestamps();
@@ -32,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('transaction_categories');
+        Schema::dropIfExists('ledger_accounts');
     }
 };

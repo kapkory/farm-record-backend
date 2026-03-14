@@ -3,31 +3,34 @@
 namespace App\Http\Controllers\Api\v1\Settings\System;
 
 use App\Http\Controllers\Controller;
-use App\Models\Core\TransactionCategory;
+use App\Models\Core\LedgerAccount;
 use App\Repositories\SearchRepo;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class TransactionsCategoryController extends Controller
+class LedgerAccountsController extends Controller
 {
 
     use ApiResponse;
     /**
      * store transaction category
      */
-    public function storeTransactionCategory(Request $request,$transaction_category_uuid = null){
+    public function storeLedgerAccount(Request $request,$transaction_category_uuid = null){
         $request->validate([
-            'name' => 'required|string|max:255'
+            'name' => 'required|string|max:255',
+            'type' => 'required|string|in:asset,liability,equity,revenue,expense',
+            'parent_id' => 'nullable|exists:ledger_accounts,id',
+            'description' => 'nullable|string',
         ]);
 
         try{
             $slug = Str::slug(request('name'));
-            $existing = TransactionCategory::where('slug', $slug)->first();
+            $existing = LedgerAccount::where('slug', $slug)->first();
             if ($existing) {
                 // If updating and the name belongs to the same crop type, allow it
-                $cropType = TransactionCategory::updateOrCreate(['uuid' => $transaction_category_uuid], [
+                $cropType = LedgerAccount::updateOrCreate(['uuid' => $transaction_category_uuid], [
                     'name' => request('name'),
                     'parent_id' => request('parent_id'),
                     'type' => request('type'),
@@ -36,7 +39,7 @@ class TransactionsCategoryController extends Controller
                 return $this->successResponse($cropType, 'Crop updated successfully', 201);
             }
 
-            $cropType = TransactionCategory::create([
+            $cropType = LedgerAccount::create([
                 'name' => request('name'),
                 'slug' => $slug,
                 'uuid' => Str::orderedUuid(),
@@ -53,8 +56,8 @@ class TransactionsCategoryController extends Controller
     /**
      * return transactioncategory values
      */
-    public function listTransactionCategories(){
-        $transactioncategories = TransactionCategory::where([
+    public function listLedgerAccounts(){
+        $transactioncategories = LedgerAccount::where([
             ['id','>',0]
         ]);
         if(\request('all'))
@@ -74,7 +77,7 @@ class TransactionsCategoryController extends Controller
      */
     public function destroyTransactionCategory($transactioncategory_id)
     {
-        $transactioncategory = TransactionCategory::findOrFail($transactioncategory_id);
+        $transactioncategory = LedgerAccount::findOrFail($transactioncategory_id);
         $transactioncategory->delete();
         return redirect()->back()->with('notice',['type'=>'success','message'=>'TransactionCategory deleted successfully']);
     }
