@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Api\v1\Farms\Farm;
 use App\DTOs\LedgerTransactionDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Farms\StoreLedgerTransactionRequest;
+use App\Http\Resources\Farms\Farm\LedgerTransactionResource;
 use App\Models\Core\Farm;
-use App\Models\Core\Farmer;
+use App\Models\Core\LedgerTransaction;
 use App\Services\Ledger\LedgerTransactionService;
 use App\Traits\ApiResponse;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -42,7 +43,23 @@ class TransactionsController extends Controller
 
     public function listTransactions(): JsonResponse
     {
-        return $this->successResponse([], 'Transactions retrieved successfully');
+        $user = request()->user();
+        $farmerIds = $user->farmers()->pluck('farmers.id');
+
+        $transactions = LedgerTransaction::query()
+            ->with([
+                'transactionable',
+                'entries' => fn ($query) => $query->with('account')->orderBy('id')->limit(1),
+            ])
+            ->whereIn('farmer_id', $farmerIds)
+            ->latest('date')
+            ->latest('id')
+            ->get();
+
+        return $this->successResponse(
+            LedgerTransactionResource::collection($transactions),
+            'Transactions retrieved successfully'
+        );
     }
 
     protected function resolveFarmId(string $transactionFor, string $transactionUuid): int

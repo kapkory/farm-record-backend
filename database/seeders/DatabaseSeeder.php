@@ -24,5 +24,8 @@ class DatabaseSeeder extends Seeder
         // Countries - Global lookup table
         $this->command->info('📍 Seeding countries...');
         $this->call(CountriesSeeder::class);
+
+        $this->command->info('📒 Seeding ledger accounts...');
+        $this->call(LedgerAccountsSeeder::class);
     }
 }
