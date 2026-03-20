@@ -65,6 +65,8 @@ class LedgerAccountsSeeder extends Seeder
                 ['code' => '5700', 'name' => 'Transport', 'type' => 'expense'],
                 ['code' => '5800', 'name' => 'Utilities', 'type' => 'expense', 'note' => 'Water, Electricity'],
                 ['code' => '5900', 'name' => 'Land Rent / Lease', 'type' => 'expense'],
+                ['code' => '5950', 'name' => 'Harvest Expenses', 'type' => 'expense'],
+                ['code' => '5950', 'name' => 'General Expenses', 'type' => 'expense'],
             ],
         ],
     ];

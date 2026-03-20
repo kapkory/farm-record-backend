@@ -23,7 +23,17 @@ class StoreProductionRequest extends FormRequest
             'unit' => ['required', 'string', 'max:100'],
             'grade' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string'],
+            'record_expense' => ['nullable', 'boolean'],
+            'expense_amount' => ['nullable', 'numeric', 'min:0.01', 'required_if:record_expense,1'],
         ];
     }
-}
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('record_expense')) {
+            $this->merge([
+                'record_expense' => filter_var($this->input('record_expense'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
+            ]);
+        }
+    }
+}
