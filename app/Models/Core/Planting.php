@@ -3,6 +3,7 @@
 namespace App\Models\Core;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Planting extends Model
  {
@@ -21,5 +22,12 @@ class Planting extends Model
     public function cropVariety(){
         return $this->belongsTo(CropVariety::class,'crop_variety_id');
     }
-    //
+    public function ledgerTransactions(): MorphMany
+    {
+        return $this->morphMany(LedgerTransaction::class, 'transactionable');
+    }
+    public function productions(): MorphMany
+    {
+        return $this->morphMany(Production::class, 'productionable');
+    }
 }
