@@ -30,4 +30,8 @@ class Planting extends Model
     {
         return $this->morphMany(Production::class, 'productionable');
     }
+    public function treatments(): MorphMany
+    {
+        return $this->morphMany(Treatment::class, 'treatmentable');
+    }
 }
