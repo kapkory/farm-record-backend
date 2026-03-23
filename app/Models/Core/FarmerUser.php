@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class FarmerUser extends Model
  {
-	protected $fillable = ["farmer_id","user_id","role","status"];
+	protected $fillable = [
+        "farmer_id", "user_id", "role", "status",
+        'created_at',
+        'updated_at'
+    ];
 
     //
 }
