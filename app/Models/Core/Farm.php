@@ -41,6 +41,16 @@ class Farm extends Model
         return $this->belongsTo(\App\Models\User::class);
     }
 
+    public function plantings()
+    {
+        return $this->hasMany(Planting::class);
+    }
+
+    public function fields()
+    {
+        return $this->hasMany(Field::class);
+    }
+
     /**
      * Scope a filter farms based on farm users.
      */

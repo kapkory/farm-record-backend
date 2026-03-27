@@ -23,7 +23,7 @@ class FarmsController extends Controller
         // simple pagination; adjust per requirements
         $perPage = (int) $request->query('per_page', 15);
         $farms = Farm::leftJoin('farmers','farmers.id','farms.farmer_id')
-                ->farmerOwned(5)
+                ->farmerOwned(auth()->id())
                 ->select('farms.*','farmers.display_name as owner');
 //                ->get();
 //        dd($farms);
