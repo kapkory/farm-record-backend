@@ -57,19 +57,11 @@ class LedgerAccountsController extends Controller
      * return transactioncategory values
      */
     public function listLedgerAccounts(){
-        $transactioncategories = LedgerAccount::where([
+        $ledgerAccounts = LedgerAccount::where([
             ['id','>',0]
-        ]);
-        if(\request('all'))
-            return $transactioncategories->get();
-        return SearchRepo::of($transactioncategories)
-            ->addColumn('action',function($transactioncategory){
-                $str = '';
-                $json = json_encode($transactioncategory);
-                $str.='<a href="#" data-model="'.htmlentities($json, ENT_QUOTES, 'UTF-8').'" onclick="prepareEdit(this,\'transactioncategory_modal\');" class="btn badge btn-info btn-sm"><i class="fa fa-edit"></i> Edit</a>';
-            //    $str.='&nbsp;&nbsp;<a href="#" onclick="deleteItem(\''.url(request()->user()->role.'/transactioncategories/delete').'\',\''.$transactioncategory->id.'\');" class="btn badge btn-outline-danger btn-sm"><i class="fa fa-trash"></i> Delete</a>';
-                return $str;
-            })->make();
+        ])->select('uuid','name','slug','description','type')->get();
+
+        return $this->successResponse($ledgerAccounts, 'All ledger accounts fetched successfully', 201);;
     }
 
     /**
