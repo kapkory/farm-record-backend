@@ -66,7 +66,7 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
 # Nginx needs these directories
-RUN mkdir -p /run/nginx
+RUN mkdir -p /run/nginx /var/log/supervisor
 
 EXPOSE 80
 
