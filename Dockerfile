@@ -24,7 +24,9 @@ RUN apk add --no-cache \
         fileinfo \
         opcache \
         pcntl \
-    && rm -rf /var/cache/apk/*
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && rm -rf /var/cache/apk/* /tmp/pear
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
