@@ -63,23 +63,36 @@ class PlantingsController extends Controller
     }
 
     /**
-     * return planting values
+x     * return planting values scoped to the authenticated user's farms
      */
     public function listPlantings($farm_uuid = null){
-//        return ["hello"];
+        $userId = auth()->id();
+
+        // Get farm IDs the authenticated user has access to
+        $farmIds = Farm::farmerOwned($userId)->pluck('id');
+
         $query = Planting::leftJoin('crops', 'crops.id', '=', 'plantings.crop_id')
             ->leftJoin('crop_varieties', 'crop_varieties.id', '=', 'plantings.crop_variety_id')
             ->leftJoin('fields', 'fields.id', '=', 'plantings.field_id')
-        ->select('plantings.id', 'plantings.uuid', 'plantings.farm_id', "date_planted","purpose","crops.name as crop",
-            "crop_varieties.name as variety","fields.name as field",
-            "expected_harvest_date","actual_harvest_date","quantity_planted","plantings.created_at");
+            ->select(
+                'plantings.id', 'plantings.uuid', 'plantings.farm_id',
+                'date_planted', 'purpose', 'crops.name as crop',
+                'crop_varieties.name as variety', 'fields.name as field',
+                'expected_harvest_date', 'actual_harvest_date',
+                'quantity_planted', 'plantings.created_at'
+            )
+            ->whereIn('plantings.farm_id', $farmIds);
+
         if ($farm_uuid) {
-            $farmId = Farm::where('uuid', $farm_uuid)->first()->id;
-            $query->where('plantings.farm_id', $farmId);
+            $farm = Farm::where('uuid', $farm_uuid)->whereIn('id', $farmIds)->first();
+            if (!$farm) {
+                return $this->errorResponse('Farm not found or access denied', 404);
+            }
+            $query->where('plantings.farm_id', $farm->id);
         }
 
-        $plantings = $query->orderBy('created_at')->get();
-        return $this->successResponse($plantings, 'Fields retrieved successfully', 200);
+        $plantings = $query->orderByDesc('plantings.created_at')->get();
+        return $this->successResponse($plantings, 'Plantings retrieved successfully', 200);
     }
 
     /**

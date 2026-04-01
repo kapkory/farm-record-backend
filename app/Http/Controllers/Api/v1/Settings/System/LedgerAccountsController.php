@@ -59,7 +59,7 @@ class LedgerAccountsController extends Controller
     public function listLedgerAccounts(){
         $ledgerAccounts = LedgerAccount::where([
             ['id','>',0]
-        ])->select('uuid','name','slug','description','type')->get();
+        ])->select('id','uuid','name','slug','description','parent_id','type','is_system')->get();
 
         return $this->successResponse($ledgerAccounts, 'All ledger accounts fetched successfully', 201);;
     }
