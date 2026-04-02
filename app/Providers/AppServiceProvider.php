@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Core\Planting;
+use App\Observers\PlantingObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
 
@@ -23,5 +25,7 @@ class AppServiceProvider extends ServiceProvider
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
             return config('app.frontend_url')."/password-reset/$token?email={$notifiable->getEmailForPasswordReset()}";
         });
+
+        Planting::observe(PlantingObserver::class);
     }
 }

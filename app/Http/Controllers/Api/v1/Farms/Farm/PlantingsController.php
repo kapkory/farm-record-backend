@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Core\Farm;
 use App\Models\Core\Field;
 use App\Models\Core\Planting;
+use App\Models\Core\Schedule;
 use App\Repositories\SearchRepo;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -45,6 +46,9 @@ class PlantingsController extends Controller
 
             if (\request('variety_id') != '')
                 $data['crop_variety_id'] = $request->input('variety_id');
+
+            if (\request('planting_schedule_uuid') != '')
+                $data['schedule_id'] = Schedule::where('uuid', $request->input('planting_schedule_uuid'))->first()->id;
 
             $data['farm_id'] = $farmId;
             $data['description'] = \request('description');

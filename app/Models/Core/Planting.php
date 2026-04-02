@@ -3,11 +3,12 @@
 namespace App\Models\Core;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Planting extends Model
  {
-	protected $fillable = ["farm_id", 'uuid',"field_id","crop_id","crop_variety_id","date_planted",
+	protected $fillable = ["farm_id", 'uuid',"field_id","crop_id","crop_variety_id","date_planted","schedule_id",
         "expected_harvest_date","actual_harvest_date","quantity_planted","purpose","user_id","description"];
 
     public function farm(){
@@ -22,6 +23,10 @@ class Planting extends Model
     public function cropVariety(){
         return $this->belongsTo(CropVariety::class,'crop_variety_id');
     }
+    public function schedule(): BelongsTo
+    {
+        return $this->belongsTo(Schedule::class, 'schedule_id');
+    }
     public function ledgerTransactions(): MorphMany
     {
         return $this->morphMany(LedgerTransaction::class, 'transactionable');
@@ -33,5 +38,9 @@ class Planting extends Model
     public function treatments(): MorphMany
     {
         return $this->morphMany(Treatment::class, 'treatmentable');
+    }
+    public function tasks(): MorphMany
+    {
+        return $this->morphMany(Task::class, 'taskable');
     }
 }
