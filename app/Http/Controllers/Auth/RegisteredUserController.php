@@ -49,7 +49,7 @@ class RegisteredUserController extends Controller
             'type' => $request->string('farm_type'),
         ]);
 
-        $user->farmers()->attach($farmer->id);
+        $user->farmers()->attach($farmer->id, ['role' => 'owner', 'status' => 1]);
 
         DB::commit();
         event(new Registered($user));

@@ -64,7 +64,15 @@ class FarmsController extends Controller
             $data = $validator->validated();
             $data['uuid'] = Str::orderedUuid();
             $data['established_date'] = $request->established_date != '' ? Carbon::parse($request->established_date)->toDateString() : null;
-            $data['farmer_id'] = $request->user()->farmers()->wherePivot('role','owner')->first()->id; // assuming authenticated user is the farmer
+
+            $farmer = $request->user()->farmers()->wherePivot('role', 'owner')->first()
+                ?? $request->user()->farmers()->first();
+
+            if (! $farmer) {
+                return $this->errorResponse('No farmer profile found for this user.', 403);
+            }
+
+            $data['farmer_id'] = $farmer->id;
 
             $farm = Farm::create($data);
 
