@@ -54,9 +54,9 @@ class TreatmentTypesController extends Controller
         }
     }
 
-    public function listTreatmentTypes()
+    public function listTreatmentTypes($type = 'crop')
     {
-        $treatmentTypes = TreatmentType::select('id', 'uuid', 'name', 'description', 'type', 'status')->get();
+        $treatmentTypes = TreatmentType::where('type',$type)->select('id', 'uuid', 'name', 'description', 'type', 'status')->get();
 
         return $this->successResponse($treatmentTypes, 'Treatment types retrieved successfully', 200);
     }

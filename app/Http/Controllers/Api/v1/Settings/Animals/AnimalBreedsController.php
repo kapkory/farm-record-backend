@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1\Settings\Animals;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Settings\Animals\AnimalBreedResource;
 use App\Models\Core\AnimalBreed;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -58,7 +59,9 @@ class AnimalBreedsController extends Controller
 
     public function listAnimalBreeds(Request $request)
     {
-        $query = AnimalBreed::query()->select('id', 'uuid', 'animal_type_id', 'name', 'purpose', 'average_lifespan_months', 'gestation_days', 'description', 'status');
+        $query = AnimalBreed::query()
+            ->with('animalType:id,name')
+            ->select('id', 'uuid', 'animal_type_id', 'name', 'purpose', 'average_lifespan_months', 'gestation_days', 'description', 'status');
 
         if ($request->filled('animal_type_id')) {
             $query->where('animal_type_id', $request->input('animal_type_id'));
@@ -66,7 +69,7 @@ class AnimalBreedsController extends Controller
 
         $breeds = $query->orderBy('name')->get();
 
-        return $this->successResponse($breeds, 'Animal breeds retrieved successfully');
+        return $this->successResponse(AnimalBreedResource::collection($breeds), 'Animal breeds retrieved successfully');
     }
 
     public function delete(string $uuid)
