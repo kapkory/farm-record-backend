@@ -3,12 +3,14 @@
 namespace App\Services\Treatment;
 
 use App\DTOs\LedgerTransactionDTO;
+use App\Models\Core\AnimalGroup;
 use App\Models\Core\LedgerAccount;
 use App\Models\Core\Planting;
 use App\Models\Core\TreatmentType;
 use App\Models\User;
 use App\Services\Ledger\LedgerTransactionService;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 class TreatmentExpenseRecorder
@@ -18,6 +20,16 @@ class TreatmentExpenseRecorder
     }
 
     public function recordForPlanting(User $user, Planting $planting, array $validated): void
+    {
+        $this->recordForTarget($user, $planting->load('farm'), $validated, 'planting');
+    }
+
+    public function recordForAnimalGroup(User $user, AnimalGroup $animalGroup, array $validated): void
+    {
+        $this->recordForTarget($user, $animalGroup->load('farm'), $validated, 'animal_group');
+    }
+
+    protected function recordForTarget(User $user, Model $target, array $validated, string $transactionFor): void
     {
         $expenseAmount = (float) ($validated['expense_amount'] ?? 0);
 
@@ -35,9 +47,9 @@ class TreatmentExpenseRecorder
         $expenseAccount = LedgerAccount::query()
             ->where('type', 'expense')
             ->whereIn('name', $preferredAccounts)
-            ->where(function ($query) use ($planting) {
+            ->where(function ($query) use ($target) {
                 $query->whereNull('farmer_id')
-                    ->orWhere('farmer_id', $planting->farm->farmer_id);
+                    ->orWhere('farmer_id', $target->farm->farmer_id);
             })
             ->orderByRaw("CASE name
                 WHEN 'Fertilizer & Chemicals' THEN 1
@@ -54,8 +66,8 @@ class TreatmentExpenseRecorder
         }
 
         $dto = new LedgerTransactionDTO(
-            farmerId: (int) $planting->farm->farmer_id,
-            farmId: (int) $planting->farm_id,
+            farmerId: (int) $target->farm->farmer_id,
+            farmId: (int) $target->farm_id,
             date: Carbon::parse($validated['date']),
             paymentMethod: 'cash',
             transactionType: 'expense',
@@ -63,8 +75,8 @@ class TreatmentExpenseRecorder
             amount: $expenseAmount,
             description: 'Treatment expense for '.$validated['details'],
             referenceNumber: null,
-            transactionFor: 'planting',
-            transactionUuid: $planting->uuid,
+            transactionFor: $transactionFor,
+            transactionUuid: $target->uuid,
             quantity: null,
             unitCost: null,
         );

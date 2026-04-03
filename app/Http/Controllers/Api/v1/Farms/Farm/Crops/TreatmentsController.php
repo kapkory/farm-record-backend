@@ -3,15 +3,18 @@
 namespace App\Http\Controllers\Api\v1\Farms\Farm\Crops;
 
 use App\Http\Controllers\Controller;
+use App\Models\Core\AnimalGroup;
 use App\Models\Core\Planting;
 use App\Models\Core\Treatment;
 use App\Services\Treatment\TreatmentExpenseRecorder;
 use App\Traits\ApiResponse;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class TreatmentsController extends Controller
 {
@@ -23,7 +26,8 @@ class TreatmentsController extends Controller
 
     public function listPlantingTreatments($plantingUuid): JsonResponse
     {
-        $planting = Planting::query()->where('uuid', $plantingUuid)->firstOrFail();
+        $model = request()->query('model', 'planting');
+        $treatmentable = $this->resolveTreatmentable($model, $plantingUuid);
 
         $treatments = Treatment::query()
             ->leftJoin('treatment_types', 'treatment_types.id', '=', 'treatments.treatment_type_id')
@@ -39,8 +43,8 @@ class TreatmentsController extends Controller
                 'treatment_types.name as treatment_type',
                 'treatment_types.type as type'
             )
-            ->where('treatmentable_type', Planting::class)
-            ->where('treatmentable_id', $planting->id)
+            ->where('treatmentable_type', $treatmentable::class)
+            ->where('treatmentable_id', $treatmentable->id)
             ->orderBy('treatments.created_at')
             ->get()
             ->map(function ($treatment) {
@@ -63,9 +67,10 @@ class TreatmentsController extends Controller
     public function storeTreatment(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'planting_uuid' => 'required|uuid|exists:plantings,uuid',
+            'planting_uuid' => 'nullable|uuid|exists:plantings,uuid',
+            'animal_group_uuid' => 'nullable|uuid|exists:animal_groups,uuid',
             'farm_id' => 'nullable|uuid|exists:farms,uuid',
-            'model' => 'nullable|string|in:planting',
+            'model' => 'nullable|string|in:planting,animal_group',
             'treatment_type_id' => 'required|integer|exists:treatment_types,id',
             'details' => 'required|string|max:255',
             'date' => 'required|date',
@@ -76,16 +81,25 @@ class TreatmentsController extends Controller
         ]);
 
         try {
-            $planting = Planting::query()->where('uuid', $request->input('planting_uuid'))->firstOrFail();
+            $model = $data['model'] ?? 'planting';
+            $targetUuid = $model === 'animal_group'
+                ? $request->input('animal_group_uuid')
+                : $request->input('planting_uuid');
 
-            $treatment = DB::transaction(function () use ($request, $data, $planting) {
+            if (! $targetUuid) {
+                return $this->errorResponse('A valid target UUID is required for the selected treatment model.', 422);
+            }
+
+            $treatmentable = $this->resolveTreatmentable($model, $targetUuid);
+
+            $treatment = DB::transaction(function () use ($request, $data, $treatmentable, $model) {
                 $treatment = Treatment::create([
                     'uuid' => (string) Str::orderedUuid(),
                     'treatment_type_id' => $data['treatment_type_id'],
-                    'farm_id' => $planting->farm_id,
+                    'farm_id' => $treatmentable->farm_id,
                     'details' => $data['details'],
-                    'treatmentable_type' => Planting::class,
-                    'treatmentable_id' => $planting->id,
+                    'treatmentable_type' => $treatmentable::class,
+                    'treatmentable_id' => $treatmentable->id,
                     'date' => $data['date'],
                     'notes' => $data['notes'] ?? null,
                     'retreat_date' => $data['retreat_date'] ?? null,
@@ -93,11 +107,13 @@ class TreatmentsController extends Controller
                 ]);
 
                 if (($data['record_expense'] ?? false) === true) {
-                    $this->treatmentExpenseRecorder->recordForPlanting(
-                        $request->user(),
-                        $planting->load('farm'),
-                        $data
-                    );
+                    if ($model === 'animal_group' && $treatmentable instanceof AnimalGroup) {
+                        $this->treatmentExpenseRecorder->recordForAnimalGroup($request->user(), $treatmentable->load('farm'), $data);
+                    }
+
+                    if ($model === 'planting' && $treatmentable instanceof Planting) {
+                        $this->treatmentExpenseRecorder->recordForPlanting($request->user(), $treatmentable->load('farm'), $data);
+                    }
                 }
 
                 return $treatment;
@@ -107,5 +123,14 @@ class TreatmentsController extends Controller
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to save treatment', 500, ['exception' => $e->getMessage()]);
         }
+    }
+
+    protected function resolveTreatmentable(string $type, string $uuid): Model
+    {
+        return match ($type) {
+            'planting' => Planting::query()->where('uuid', $uuid)->firstOrFail(),
+            'animal_group' => AnimalGroup::query()->where('uuid', $uuid)->firstOrFail(),
+            default => throw new InvalidArgumentException('Unsupported treatment target.'),
+        };
     }
 }

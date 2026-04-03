@@ -13,7 +13,7 @@ class ProductionResource extends JsonResource
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,
-            'productionable_type' => $this->productionable_type ? Str::of(class_basename($this->productionable_type))->lower()->value() : null,
+            'productionable_type' => $this->productionable_type ? Str::snake(class_basename($this->productionable_type)) : null,
             'productionable_id' => $this->productionable_id,
             'productionable_uuid' => $this->whenLoaded('productionable', fn () => $this->productionable?->uuid),
             'name' => $this->name,

@@ -27,5 +27,8 @@ class DatabaseSeeder extends Seeder
 
         $this->command->info('📒 Seeding ledger accounts...');
         $this->call(LedgerAccountsSeeder::class);
+
+        $this->command->info('🐄 Seeding animal types...');
+        $this->call(AnimalTypesSeeder::class);
     }
 }

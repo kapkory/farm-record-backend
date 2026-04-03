@@ -23,7 +23,13 @@ class FarmResource extends JsonResource
             'type' => ucwords($this->type) .' Farming',
             'total_plantings' => $this->whenLoaded('plantings', fn () => $this->plantings->count(), $this->plantings_count ?? 0),
             'total_fields' => $this->whenLoaded('fields', fn () => $this->fields->count(), $this->fields_count ?? 0),
-            'total_livestocks' => 0,
+            'total_livestocks' => $this->whenLoaded('animalGroups',
+                fn () => $this->animalGroups->sum('current_count'),
+                $this->animal_groups_sum_current_count ?? 0
+            ) + $this->whenLoaded('standaloneAnimals',
+                fn () => $this->standaloneAnimals->where('status', 'active')->count(),
+                $this->standalone_animals_count ?? 0
+            ),
             'total_area_planted' => $this->whenLoaded('plantings', function () {
                 $total = $this->plantings
                     ->where('expected_harvest_date', '>=', now())

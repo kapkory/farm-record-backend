@@ -49,7 +49,7 @@ it('stores a production for a planting using the submitted form payload', functi
         'productionable_type' => 'planting',
         'productionable_uuid' => 'a151014b-56e1-4376-9f42-fcf8451b76d5',
         'name' => 'Maize',
-        'date' => '2026-03-20',
+        'date' => '2026-03-20 00:00:00',
         'trace_number' => null,
         'quantity' => 3000,
         'unit' => 'Bags',
@@ -58,7 +58,7 @@ it('stores a production for a planting using the submitted form payload', functi
     ]);
     $response->assertCreated()
         ->assertJsonPath('status', 'success')
-        ->assertJsonPath('data.productionable_type', App\Models\Core\Planting::class)
+        ->assertJsonPath('data.productionable_type', 'planting')
         ->assertJsonPath('data.productionable_id', $planting->id)
         ->assertJsonPath('data.name', 'Maize')
         ->assertJsonPath('data.date', '2026-03-20')
@@ -69,7 +69,7 @@ it('stores a production for a planting using the submitted form payload', functi
         'productionable_type' => App\Models\Core\Planting::class,
         'productionable_id' => $planting->id,
         'name' => 'Maize',
-        'date' => '2026-03-20',
+        'date' => '2026-03-20 00:00:00',
         'quantity' => 3000,
         'unit' => 'Bags',
         'user_id' => $user->id,

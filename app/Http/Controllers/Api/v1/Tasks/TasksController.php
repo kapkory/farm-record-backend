@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tasks\StoreTaskRequest;
 use App\Http\Requests\Tasks\UpdateTaskStatusRequest;
 use App\Http\Resources\Tasks\TaskResource;
+use App\Models\Core\Animal;
+use App\Models\Core\AnimalGroup;
 use App\Models\Core\Planting;
 use App\Models\Core\Farm;
 use App\Models\Core\Task;
@@ -26,6 +28,8 @@ class TasksController extends Controller
             'planting'  => Planting::where('uuid', $uuid)->firstOrFail(),
             'farm'      => Farm::where('uuid', $uuid)->firstOrFail(),
             'treatment' => Treatment::where('uuid', $uuid)->firstOrFail(),
+            'animal_group' => AnimalGroup::where('uuid', $uuid)->firstOrFail(),
+            'animal' => Animal::where('uuid', $uuid)->firstOrFail(),
             default     => null,
         };
     }

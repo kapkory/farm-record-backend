@@ -16,7 +16,7 @@ class FarmController extends Controller
         $farm = Farm::where('uuid', $farm_uuid)->firstOrFail();
        try {
            return $this->successResponse(
-               new FarmResource($farm->load(['plantings', 'fields'])),
+               new FarmResource($farm->load(['plantings', 'fields', 'animalGroups', 'standaloneAnimals'])),
                'Farm details retrieved successfully'
            );
        } catch (\Throwable $e) {

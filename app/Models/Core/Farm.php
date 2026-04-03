@@ -51,6 +51,21 @@ class Farm extends Model
         return $this->hasMany(Field::class);
     }
 
+    public function animalGroups()
+    {
+        return $this->hasMany(AnimalGroup::class);
+    }
+
+    public function animals()
+    {
+        return $this->hasMany(Animal::class);
+    }
+
+    public function standaloneAnimals()
+    {
+        return $this->hasMany(Animal::class)->whereNull('animal_group_id');
+    }
+
     /**
      * Scope a filter farms based on farm users.
      */

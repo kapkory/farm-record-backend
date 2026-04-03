@@ -14,7 +14,7 @@ class StoreProductionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'productionable_type' => ['required', 'in:planting'],
+            'productionable_type' => ['required', 'in:planting,animal_group'],
             'productionable_uuid' => ['required', 'uuid'],
             'name' => ['required', 'string', 'max:255'],
             'date' => ['required', 'date'],

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1\Farms\Farm;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Farms\StoreProductionRequest;
 use App\Http\Resources\Farms\Farm\ProductionResource;
+use App\Models\Core\AnimalGroup;
 use App\Models\Core\Planting;
 use App\Models\Core\Production;
 use App\Services\Production\ProductionExpenseRecorder;
@@ -61,21 +62,22 @@ class ProductionsController extends Controller
         }
     }
 
-    public function listHarvests($plantingUuid): JsonResponse
+    public function listHarvests($productionableUuid): JsonResponse
     {
-        $planting = Planting::query()->where('uuid', $plantingUuid)->firstOrFail();
+        $type = request()->query('productionable_type', 'planting');
+        $productionable = $this->resolveProductionable($type, $productionableUuid);
 
         $productions = Production::query()
             ->with('productionable')
-            ->where('productionable_type', Planting::class)
-            ->where('productionable_id', $planting->id)
+            ->where('productionable_type', $productionable::class)
+            ->where('productionable_id', $productionable->id)
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
 
         return $this->successResponse(
             ProductionResource::collection($productions),
-            'Harvests retrieved successfully'
+            'Productions retrieved successfully'
         );
     }
 
@@ -83,6 +85,7 @@ class ProductionsController extends Controller
     {
         return match ($type) {
             'planting' => Planting::query()->where('uuid', $uuid)->firstOrFail(),
+            'animal_group' => AnimalGroup::query()->where('uuid', $uuid)->firstOrFail(),
             default => throw new InvalidArgumentException('Unsupported production target.'),
         };
     }

@@ -25,7 +25,7 @@ class StoreTaskRequest extends FormRequest
             'priority'             => "nullable|integer|in:{$validPriorities}",
             'task_status'          => "nullable|integer|in:{$validStatuses}",
             'parent_task_id'       => 'nullable|integer|exists:tasks,id',
-            'taskable_type'        => 'nullable|string|in:planting,farm,treatment',
+            'taskable_type'        => 'nullable|string|in:planting,farm,treatment,animal_group,animal',
             'taskable_uuid'        => 'nullable|uuid',
         ];
     }
