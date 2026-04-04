@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\v1\Farms\Farm;
+namespace App\Http\Controllers\Api\v1\Farms\Farm\Animals;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Farms\StoreAnimalGroupRequest;
@@ -27,6 +27,7 @@ class AnimalGroupsController extends Controller
             $group = AnimalGroup::create([
                 'uuid' => (string) Str::orderedUuid(),
                 'farm_id' => $farm->id,
+                'farmer_id'=> $farm->farmer_id,
                 'field_id' => $field?->id,
                 'animal_type_id' => $request->validated('animal_type_id'),
                 'animal_breed_id' => $request->validated('animal_breed_id'),

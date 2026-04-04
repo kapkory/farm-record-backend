@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->uuid()->unique();
             $table->unsignedBigInteger('farm_id');
+            $table->unsignedBigInteger('farmer_id');
             $table->unsignedBigInteger('field_id')->nullable();
             $table->unsignedBigInteger('animal_type_id');
             $table->unsignedBigInteger('animal_breed_id')->nullable();

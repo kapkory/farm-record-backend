@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\v1\Farms\Farm;
+namespace App\Http\Controllers\Api\v1\Farms\Farm\Animals;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Farms\StoreAnimalRequest;
@@ -29,17 +29,16 @@ class AnimalsController extends Controller
             $animal = Animal::create([
                 'uuid' => (string) Str::orderedUuid(),
                 'farm_id' => $farm->id,
+                'farmer_id' => $farm->farmer_id,
                 'animal_group_id' => $group?->id,
                 'animal_type_id' => $group?->animal_type_id ?? $request->validated('animal_type_id'),
                 'animal_breed_id' => $request->validated('animal_breed_id') ?? $group?->animal_breed_id,
-                'tag_id' => $request->validated('tag_id') ?? null,
+                'tag_number' => $request->validated('tag_number') ?? null,
                 'name' => $request->validated('name') ?? null,
                 'gender' => $request->validated('gender') ?? 'unknown',
                 'date_of_birth' => $request->validated('date_of_birth') ?? null,
                 'acquisition_date' => $request->validated('acquisition_date') ?? null,
                 'acquisition_type' => $request->validated('acquisition_type') ?? 'born',
-                'weight' => $request->validated('weight') ?? null,
-                'weight_unit' => $request->validated('weight_unit') ?? 'kg',
                 'status' => $request->validated('status') ?? 'active',
                 'notes' => $request->validated('notes') ?? null,
                 'user_id' => $request->user()->id,
@@ -115,7 +114,7 @@ class AnimalsController extends Controller
                 'animal_group_id' => $group?->id,
                 'animal_type_id' => $group?->animal_type_id ?? ($request->validated('animal_type_id') ?? $animal->animal_type_id),
                 'animal_breed_id' => $request->validated('animal_breed_id') ?? $group?->animal_breed_id,
-                'tag_id' => $request->validated('tag_id') ?? null,
+                'tag_number' => $request->validated('tag_number') ?? null,
                 'name' => $request->validated('name') ?? null,
                 'gender' => $request->validated('gender') ?? 'unknown',
                 'date_of_birth' => $request->validated('date_of_birth') ?? null,

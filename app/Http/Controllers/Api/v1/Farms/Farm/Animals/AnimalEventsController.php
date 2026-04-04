@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\v1\Farms\Farm;
+namespace App\Http\Controllers\Api\v1\Farms\Farm\Animals;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Farms\StoreAnimalEventRequest;

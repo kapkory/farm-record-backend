@@ -1,6 +1,6 @@
 <?php
 
-$controller = \App\Http\Controllers\Api\v1\Farms\Farm\AnimalGroupsController::class;
+$controller = \App\Http\Controllers\Api\v1\Farms\Farm\Animals\AnimalGroupsController::class;
 
 Route::post('/', [$controller, 'storeAnimalGroup']);
 Route::get('/list/{farm_uuid?}', [$controller, 'listAnimalGroups']);

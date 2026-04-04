@@ -15,6 +15,7 @@ class AnimalGroup extends Model
     protected $fillable = [
         'uuid',
         'farm_id',
+        'farmer_id',
         'field_id',
         'animal_type_id',
         'animal_breed_id',

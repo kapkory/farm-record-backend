@@ -22,11 +22,11 @@ class DatabaseSeeder extends Seeder
 //            'email' => 'test@example.com',
 //        ]);
         // Countries - Global lookup table
-        $this->command->info('📍 Seeding countries...');
-        $this->call(CountriesSeeder::class);
-
-        $this->command->info('📒 Seeding ledger accounts...');
-        $this->call(LedgerAccountsSeeder::class);
+//        $this->command->info('📍 Seeding countries...');
+//        $this->call(CountriesSeeder::class);
+//
+//        $this->command->info('📒 Seeding ledger accounts...');
+//        $this->call(LedgerAccountsSeeder::class);
 
         $this->command->info('🐄 Seeding animal types...');
         $this->call(AnimalTypesSeeder::class);
