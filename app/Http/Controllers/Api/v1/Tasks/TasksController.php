@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1\Tasks;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tasks\StoreTaskRequest;
 use App\Http\Requests\Tasks\UpdateTaskStatusRequest;
+use App\Http\Resources\Tasks\TaskCalendarResource;
 use App\Http\Resources\Tasks\TaskResource;
 use App\Models\Core\Animal;
 use App\Models\Core\AnimalGroup;
@@ -182,9 +183,41 @@ class TasksController extends Controller
         }
     }
 
-    // ─── Soft delete ─────────────────────────────────────────────────────────
-    public function deleteTask(string $uuid): JsonResponse
+    // ─── Calendar view — slim response scoped to a date range ────────────────
+    // GET /calendar?from=2026-04-01&to=2026-04-30
+    public function calendarTasks(Request $request): JsonResponse
     {
+        $query = Task::query()
+            ->with(['assignee'])
+            ->forUser($request->user()->id)
+            ->whereNull('parent_task_id');   // top-level tasks only
+
+        if ($request->filled('from')) {
+            $query->whereDate('due_date', '>=', $request->input('from'));
+        }
+
+        if ($request->filled('to')) {
+            $query->whereDate('due_date', '<=', $request->input('to'));
+        }
+
+        if ($request->filled('task_status')) {
+            $query->where('task_status', $request->input('task_status'));
+        }
+
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->input('priority'));
+        }
+
+        $tasks = $query->orderBy('due_date')->get();
+
+        return $this->successResponse(
+            TaskCalendarResource::collection($tasks),
+            'Calendar tasks retrieved successfully'
+        );
+    }
+
+    // ─── Soft delete ─────────────────────────────────────────────────────────
+    public function deleteTask(string $uuid): JsonResponse    {
         $task = Task::where('uuid', $uuid)->firstOrFail();
 
         try {
