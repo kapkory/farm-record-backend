@@ -3,6 +3,7 @@
 namespace App\Services\Treatment;
 
 use App\DTOs\LedgerTransactionDTO;
+use App\Models\Core\Animal;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\LedgerAccount;
 use App\Models\Core\Planting;
@@ -27,6 +28,11 @@ class TreatmentExpenseRecorder
     public function recordForAnimalGroup(User $user, AnimalGroup $animalGroup, array $validated): void
     {
         $this->recordForTarget($user, $animalGroup->load('farm'), $validated, 'animal_group');
+    }
+
+    public function recordForAnimal(User $user, Animal $animal, array $validated): void
+    {
+        $this->recordForTarget($user, $animal->load('farm'), $validated, 'animal');
     }
 
     protected function recordForTarget(User $user, Model $target, array $validated, string $transactionFor): void

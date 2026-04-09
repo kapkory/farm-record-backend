@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1\Farms\Farm\Crops;
 
 use App\Http\Controllers\Controller;
+use App\Models\Core\Animal;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\Planting;
 use App\Models\Core\Treatment;
@@ -69,8 +70,9 @@ class TreatmentsController extends Controller
         $data = $request->validate([
             'planting_uuid' => 'nullable|uuid|exists:plantings,uuid',
             'animal_group_uuid' => 'nullable|uuid|exists:animal_groups,uuid',
+            'animal_uuid' => 'nullable|uuid|exists:animals,uuid',
             'farm_id' => 'nullable|uuid|exists:farms,uuid',
-            'model' => 'nullable|string|in:planting,animal_group',
+            'model' => 'nullable|string|in:planting,animal_group,animal',
             'treatment_type_id' => 'required|integer|exists:treatment_types,id',
             'details' => 'required|string|max:255',
             'date' => 'required|date',
@@ -84,7 +86,7 @@ class TreatmentsController extends Controller
             $model = $data['model'] ?? 'planting';
             $targetUuid = $model === 'animal_group'
                 ? $request->input('animal_group_uuid')
-                : $request->input('planting_uuid');
+                : $request->input('animal_uuid');
 
             if (! $targetUuid) {
                 return $this->errorResponse('A valid target UUID is required for the selected treatment model.', 422);
@@ -111,6 +113,10 @@ class TreatmentsController extends Controller
                         $this->treatmentExpenseRecorder->recordForAnimalGroup($request->user(), $treatmentable->load('farm'), $data);
                     }
 
+                    if ($model === 'animal' && $treatmentable instanceof Animal) {
+                        $this->treatmentExpenseRecorder->recordForAnimal($request->user(), $treatmentable->load('farm'), $data);
+                    }
+
                     if ($model === 'planting' && $treatmentable instanceof Planting) {
                         $this->treatmentExpenseRecorder->recordForPlanting($request->user(), $treatmentable->load('farm'), $data);
                     }
@@ -130,6 +136,7 @@ class TreatmentsController extends Controller
         return match ($type) {
             'planting' => Planting::query()->where('uuid', $uuid)->firstOrFail(),
             'animal_group' => AnimalGroup::query()->where('uuid', $uuid)->firstOrFail(),
+            'animal' => Animal::query()->where('uuid', $uuid)->firstOrFail(),
             default => throw new InvalidArgumentException('Unsupported treatment target.'),
         };
     }
