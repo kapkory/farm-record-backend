@@ -24,7 +24,6 @@ class AnimalTypesSeeder extends Seeder
             ['name' => 'Horses', 'category' => 'livestock', 'tracking_mode' => 'individual_only', 'count_label' => 'animals'],
             ['name' => 'Camels', 'category' => 'livestock', 'tracking_mode' => 'individual_only', 'count_label' => 'animals'],
             ['name' => 'Dogs', 'category' => 'livestock', 'tracking_mode' => 'individual_only', 'count_label' => 'animals'],
-            ['name' => 'Cats', 'category' => 'livestock', 'tracking_mode' => 'individual_only', 'count_label' => 'animals'],
         ];
 
         foreach ($types as $type) {
@@ -42,10 +41,11 @@ class AnimalTypesSeeder extends Seeder
         $breeds = [
             'Cattle' => [['name' => 'Holstein', 'purpose' => 'dairy'], ['name' => 'Friesian', 'purpose' => 'dairy']],
             'Goats' => [['name' => 'Boer', 'purpose' => 'meat'], ['name' => 'Toggenburg', 'purpose' => 'dairy']],
-            'Sheep' => [['name' => 'Merino', 'purpose' => 'wool']],
+            'Sheep' => [['name' => 'Merino', 'purpose' => 'wool'],['name' => 'Dorper', 'purpose' => 'meat']],
             'Pigs' => [['name' => 'Large White', 'purpose' => 'meat']],
             'Poultry' => [['name' => 'Kienyeji', 'purpose' => 'eggs'], ['name' => 'Broiler', 'purpose' => 'meat']],
             'Bees' => [['name' => 'Apis mellifera', 'purpose' => 'honey']],
+            'Fish' => [['name' => 'Tilapia', 'purpose' => 'meat']],
         ];
 
         foreach ($breeds as $typeName => $items) {
