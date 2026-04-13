@@ -28,12 +28,10 @@ class PasswordResetLinkController extends Controller
             $request->only('email')
         );
 
-        if ($status != Password::RESET_LINK_SENT) {
-            throw ValidationException::withMessages([
-                'email' => [__($status)],
-            ]);
-        }
-
-        return response()->json(['status' => __($status)]);
+        // Always return the same success message to prevent email enumeration
+        // The actual email will only be sent if the user exists
+        return response()->json([
+            'status' => 'If your email is registered with us, you will receive a password reset link shortly.'
+        ]);
     }
 }
