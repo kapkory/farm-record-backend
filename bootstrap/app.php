@@ -17,6 +17,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'login',
+            'register',
+            'forgot-password',
+            'reset-password',
+        ]);
+
         $middleware->group('api', [
              \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
              'throttle:60,1',
