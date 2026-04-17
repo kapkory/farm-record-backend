@@ -39,13 +39,31 @@ class AnimalTypesSeeder extends Seeder
         }
 
         $breeds = [
-            'Cattle' => [['name' => 'Holstein', 'purpose' => 'dairy'], ['name' => 'Friesian', 'purpose' => 'dairy']],
-            'Goats' => [['name' => 'Boer', 'purpose' => 'meat'], ['name' => 'Toggenburg', 'purpose' => 'dairy']],
-            'Sheep' => [['name' => 'Merino', 'purpose' => 'wool'],['name' => 'Dorper', 'purpose' => 'meat']],
-            'Pigs' => [['name' => 'Large White', 'purpose' => 'meat']],
-            'Poultry' => [['name' => 'Kienyeji', 'purpose' => 'eggs'], ['name' => 'Broiler', 'purpose' => 'meat']],
-            'Bees' => [['name' => 'Apis mellifera', 'purpose' => 'honey']],
-            'Fish' => [['name' => 'Tilapia', 'purpose' => 'meat']],
+            'Cattle' => [
+                ['name' => 'Holstein', 'purpose' => 'dairy', 'gestation_days' => 283],
+                ['name' => 'Friesian', 'purpose' => 'dairy', 'gestation_days' => 283]
+            ],
+            'Goats' => [
+                ['name' => 'Boer', 'purpose' => 'meat', 'gestation_days' => 150],
+                ['name' => 'Toggenburg', 'purpose' => 'dairy', 'gestation_days' => 150]
+            ],
+            'Sheep' => [
+                ['name' => 'Merino', 'purpose' => 'wool', 'gestation_days' => 147],
+                ['name' => 'Dorper', 'purpose' => 'meat', 'gestation_days' => 147]
+            ],
+            'Pigs' => [
+                ['name' => 'Large White', 'purpose' => 'meat', 'gestation_days' => 114]
+            ],
+            'Poultry' => [
+                ['name' => 'Kienyeji', 'purpose' => 'eggs', 'gestation_days' => 21],
+                ['name' => 'Broiler', 'purpose' => 'meat', 'gestation_days' => 21]
+            ],
+            'Bees' => [
+                ['name' => 'Apis mellifera', 'purpose' => 'honey', 'gestation_days' => 21]
+            ],
+            'Fish' => [
+                ['name' => 'Tilapia', 'purpose' => 'meat', 'gestation_days' => 4]
+            ],
         ];
 
         foreach ($breeds as $typeName => $items) {
@@ -63,6 +81,7 @@ class AnimalTypesSeeder extends Seeder
                 $breed->fill([
                     'uuid' => $breed->uuid ?: (string) Str::orderedUuid(),
                     'purpose' => $item['purpose'],
+                    'gestation_days' => $item['gestation_days'],
                     'status' => 1,
                 ]);
 

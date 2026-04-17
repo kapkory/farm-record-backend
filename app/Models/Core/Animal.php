@@ -25,8 +25,7 @@ class Animal extends Model
         'date_of_birth',
         'acquisition_date',
         'acquisition_type',
-        'weight',
-        'weight_unit',
+        'gestation_adjustment_days',
         'status',
         'notes',
         'user_id',
@@ -35,8 +34,7 @@ class Animal extends Model
     protected $casts = [
         'date_of_birth' => 'date',
         'acquisition_date' => 'date',
-        'weight' => 'decimal:2',
-    ];
+        'gestation_adjustment_days'  => 'integer'];
 
     public function farm(): BelongsTo
     {
