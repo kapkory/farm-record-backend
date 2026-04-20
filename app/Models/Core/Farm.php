@@ -66,6 +66,11 @@ class Farm extends Model
         return $this->hasMany(Animal::class)->whereNull('animal_group_id');
     }
 
+    public function animalBreedings()
+    {
+        return $this->hasMany(AnimalBreeding::class);
+    }
+
     /**
      * Scope a filter farms based on farm users.
      */
@@ -78,4 +83,3 @@ class Farm extends Model
         });
     }
 }
-

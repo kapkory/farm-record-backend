@@ -35,7 +35,7 @@ class LivestockResource extends JsonResource
                 'name' => $this->animalBreed->name,
             ] : null),
             'tracking_type'    => 'individual',
-            'tag_number'       => $this->tag_id,
+            'tag_number'       => $this->tag_number,
             'name'             => $this->name,
             'group_name'       => null,
             'count'            => 1,

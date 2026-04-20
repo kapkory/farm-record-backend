@@ -42,6 +42,8 @@ class StoreAnimalRequest extends FormRequest
                 $validator->errors()->add('farm_uuid', 'Either farm_uuid or animal_group_uuid is required.');
             }
 
+            // Must provide at least tag_number or name
+
             if (! $this->filled('animal_group_uuid') && ! $this->filled('animal_type_id')) {
                 $validator->errors()->add('animal_type_id', 'animal_type_id is required for standalone animals.');
             }

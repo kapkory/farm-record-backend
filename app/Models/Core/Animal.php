@@ -5,6 +5,7 @@ namespace App\Models\Core;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -81,6 +82,54 @@ class Animal extends Model
         return $this->morphMany(Production::class, 'productionable');
     }
 
+    /**
+     * Breeding records where this animal is the dam (mother)
+     */
+    public function breedingsAsDam(): HasMany
+    {
+        return $this->hasMany(AnimalBreeding::class, 'dam_id');
+    }
+
+    /**
+     * Breeding records where this animal is the sire (father)
+     */
+    public function breedingsAsSire(): HasMany
+    {
+        return $this->hasMany(AnimalBreeding::class, 'sire_id');
+    }
+
+    /**
+     * All breeding records for this animal (as either dam or sire)
+     */
+    public function allBreedings()
+    {
+        return AnimalBreeding::where('dam_id', $this->id)
+            ->orWhere('sire_id', $this->id);
+    }
+
+    /**
+     * Get the breed relationship (alias for animalBreed for easier access)
+     */
+    public function breed(): BelongsTo
+    {
+        return $this->animalBreed();
+    }
+
+    /**
+     * Generate the next sequential tag number in the format FC-000001.
+     */
+    public static function generateTagNumber(): string
+    {
+        $latest = static::withTrashed()
+            ->where('tag_number', 'LIKE', 'FC-%')
+            ->orderByRaw("CAST(SUBSTRING(tag_number, 4) AS UNSIGNED) DESC")
+            ->value('tag_number');
+
+        $next = $latest ? ((int) ltrim(substr($latest, 3), '0') ?: 0) + 1 : 1;
+
+        return 'FC-' . str_pad($next, 6, '0', STR_PAD_LEFT);
+    }
+
     public function scopeStandalone(Builder $query): Builder
     {
         return $query->whereNull('animal_group_id');
@@ -101,4 +150,3 @@ class Animal extends Model
         return $this->animal_group_id === null;
     }
 }
-
