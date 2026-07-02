@@ -1,0 +1,25 @@
+name: Deploy to production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # allows manual runs from the Actions tab
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false # queue deploys, never run two at once
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run deploy.sh on server
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 30m   # docker builds can be slow
+          script: |
+            cd ~/farmconsul
+            ./deploy.sh --build --migrate

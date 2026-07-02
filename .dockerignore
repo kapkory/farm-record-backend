@@ -2,6 +2,7 @@ vendor
 node_modules
 .git
 .env
+.levis.txt
 .env.backup
 storage/logs/*
 storage/framework/cache/*

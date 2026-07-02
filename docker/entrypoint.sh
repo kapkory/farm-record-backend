@@ -19,6 +19,12 @@ if [ "$APP_ENV" = "production" ]; then
 fi
 
 # Ensure storage link exists
-php artisan storage:link 2>/dev/null || true
+if [ -L public/storage ]; then
+    :
+elif [ -e public/storage ]; then
+    echo "WARNING: public/storage exists but is not a symlink; skipping php artisan storage:link"
+else
+    php artisan storage:link
+fi
 
 exec "$@"
