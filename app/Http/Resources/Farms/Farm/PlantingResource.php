@@ -36,6 +36,8 @@ class PlantingResource extends JsonResource
             'quantity_planted' => $this->quantity_planted,
             'purpose' => $this->purpose,
             'description' => $this->description,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

@@ -30,7 +30,8 @@ class AnimalGroupResource extends JsonResource
             'count_label' => $this->whenLoaded('animalType', fn () => $this->animalType?->count_label, $this->count_label ?? 'animals'),
             'total_animals_tracked' => $this->whenLoaded('animals', fn () => $this->animals->count(), $this->animals_count ?? 0),
             'recent_events_count' => $this->whenLoaded('events', fn () => $this->events->count(), $this->events_count ?? 0),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }
-

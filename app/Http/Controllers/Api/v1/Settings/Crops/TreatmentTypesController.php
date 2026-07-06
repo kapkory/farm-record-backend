@@ -28,7 +28,6 @@ class TreatmentTypesController extends Controller
             if ($existing) {
                 if ($treatmentTypeUuid && $existing->uuid == $treatmentTypeUuid) {
                     $treatmentType = TreatmentType::updateOrCreate(['uuid' => $treatmentTypeUuid], [
-                        'uuid' => Str::orderedUuid(),
                         'name' => request('name'),
                         'description' => request('description'),
                         'type' => request('type'),
@@ -56,7 +55,7 @@ class TreatmentTypesController extends Controller
 
     public function listTreatmentTypes($type = 'crop')
     {
-        $treatmentTypes = TreatmentType::where('type',$type)->select('id', 'uuid', 'name', 'description', 'type', 'status')->get();
+        $treatmentTypes = TreatmentType::where('type', $type)->select('id', 'uuid', 'name', 'description', 'type', 'status')->get();
 
         return $this->successResponse($treatmentTypes, 'Treatment types retrieved successfully', 200);
     }

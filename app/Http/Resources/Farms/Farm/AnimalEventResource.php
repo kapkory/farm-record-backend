@@ -21,7 +21,8 @@ class AnimalEventResource extends JsonResource
             'quantity' => $this->quantity,
             'description' => $this->description,
             'metadata' => $this->metadata,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }
-

@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 class CropsController extends Controller
 {
     use ApiResponse;
+
     public function create(Request $request, $cropUuid = null)
     {
         $request->validate([
@@ -18,16 +19,16 @@ class CropsController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        try{
+        try {
             $existing = Crop::where('name', request('name'))->first();
             if ($existing) {
                 if ($cropUuid && $existing->uuid == $cropUuid) {
                     // If updating and the name belongs to the same crop type, allow it
                     $cropType = Crop::updateOrCreate(['uuid' => $cropUuid], [
-                        'uuid' => Str::orderedUuid(),
                         'name' => request('name'),
                         'description' => request('description'),
                     ]);
+
                     return $this->successResponse($cropType, 'Crop updated successfully', 201);
                 } else {
                     return $this->errorResponse('Crop with this name already exists', 409);
@@ -39,15 +40,17 @@ class CropsController extends Controller
                 'name' => request('name'),
                 'description' => request('description'),
             ]);
+
             return $this->successResponse($cropType, 'Crop created successfully', 201);
         } catch (\Throwable $e) {
-             return $this->errorResponse('Failed to create crop', 500, ['exception' => $e->getMessage()]);
+            return $this->errorResponse('Failed to create crop', 500, ['exception' => $e->getMessage()]);
         }
     }
 
     public function listCrops()
     {
-        $cropTypes = Crop::select('id','uuid','name','description')->get();
+        $cropTypes = Crop::select('id', 'uuid', 'name', 'description')->get();
+
         return $this->successResponse($cropTypes, 'Crop retrieved successfully', 200);
     }
 
@@ -60,6 +63,7 @@ class CropsController extends Controller
 
         try {
             $crop->delete();
+
             return $this->successResponse(null, 'Crop deleted successfully', 200);
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to delete crop', 500, ['exception' => $e->getMessage()]);

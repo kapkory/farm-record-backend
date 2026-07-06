@@ -38,7 +38,8 @@ class AnimalResource extends JsonResource
                 'uuid' => $this->farm->uuid,
                 'name' => $this->farm->name,
             ] : null),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }
-

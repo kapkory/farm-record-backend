@@ -20,7 +20,8 @@ class LedgerTransactionResource extends JsonResource
             'transaction_for' => $this->transactionable_type ? Str::of(class_basename($this->transactionable_type))->lower()->value() : null,
             'transaction_uuid' => $this->whenLoaded('transactionable', fn () => $this->transactionable?->uuid),
             'ledger_entries' => LedgerEntryResource::collection($this->whenLoaded('entries')),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }
-

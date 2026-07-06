@@ -20,7 +20,7 @@ class FarmResource extends JsonResource
             'name' => $this->name,
             'location' => $this->location,
             'farm_size' => $this->size.' '.$this->size_unit,
-            'type' => ucwords($this->type) .' Farming',
+            'type' => ucwords($this->type).' Farming',
             'total_plantings' => $this->whenLoaded('plantings', fn () => $this->plantings->count(), $this->plantings_count ?? 0),
             'total_fields' => $this->whenLoaded('fields', fn () => $this->fields->count(), $this->fields_count ?? 0),
             'total_livestocks' => $this->whenLoaded('animalGroups',
@@ -39,8 +39,11 @@ class FarmResource extends JsonResource
             }),
             'next_harvest_date' => $this->whenLoaded('plantings', function () {
                 $next = $this->plantings->where('expected_harvest_date', '>=', now())->sortBy('expected_harvest_date')->first();
-                    return $next ?  Carbon::parse($next->expected_harvest_date)->diffForHumans() : null;
+
+                return $next ? Carbon::parse($next->expected_harvest_date)->diffForHumans() : null;
             }),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }
