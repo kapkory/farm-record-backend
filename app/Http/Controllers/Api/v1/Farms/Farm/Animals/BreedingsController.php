@@ -10,14 +10,32 @@ use App\Models\Core\Animal;
 use App\Models\Core\AnimalBreeding;
 use App\Models\Core\Farm;
 use App\Traits\ApiResponse;
+use App\Traits\ResolvesClientUuid;
 use Illuminate\Http\JsonResponse;
 
 class BreedingsController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, ResolvesClientUuid;
 
     public function store(StoreBreedingRequest $request): JsonResponse
     {
+        [$uuid, $existing, $foreign] = $this->resolveClientUuid(
+            $request,
+            AnimalBreeding::class,
+            fn (AnimalBreeding $breeding) => Farm::farmerOwned($request->user()->id)->where('id', $breeding->farm_id)->exists()
+        );
+
+        if ($foreign) {
+            return $this->clientUuidTakenResponse();
+        }
+
+        if ($existing) {
+            return $this->successResponse(
+                new AnimalBreedingResource($existing->load(['dam.animalType', 'dam.animalBreed', 'sire.animalType', 'sire.animalBreed'])),
+                'Breeding record already saved'
+            );
+        }
+
         try {
             $dam = Animal::where('uuid', $request->validated('dam_id'))
                 ->with(['farm', 'animalType', 'animalBreed'])
@@ -30,18 +48,19 @@ class BreedingsController extends Controller
                 : null;
 
             $breeding = AnimalBreeding::create([
-                'farm_id'             => $dam->farm_id,
-                'dam_id'              => $dam->id,
-                'sire_id'             => $sire?->id,
-                'sire_type'           => $request->validated('sire_type'),
-                'service_date'        => $request->validated('service_date'),
+                'uuid' => $uuid,
+                'farm_id' => $dam->farm_id,
+                'dam_id' => $dam->id,
+                'sire_id' => $sire?->id,
+                'sire_type' => $request->validated('sire_type'),
+                'service_date' => $request->validated('service_date'),
                 'expected_birth_date' => $request->validated('expected_birth_date'),
-                'status'              => $request->validated('status', 'pending'),
-                'ai_straw_code'       => $request->validated('ai_straw_code'),
-                'ai_bull_name'        => $request->validated('ai_bull_name'),
-                'ai_technician'       => $request->validated('ai_technician'),
-                'notes'               => $request->validated('notes'),
-                'user_id'             => $request->user()->id,
+                'status' => $request->validated('status', 'pending'),
+                'ai_straw_code' => $request->validated('ai_straw_code'),
+                'ai_bull_name' => $request->validated('ai_bull_name'),
+                'ai_technician' => $request->validated('ai_technician'),
+                'notes' => $request->validated('notes'),
+                'user_id' => $request->user()->id,
             ]);
 
             // Set already-loaded relations to avoid extra queries
@@ -56,6 +75,13 @@ class BreedingsController extends Controller
                 201
             );
         } catch (\Throwable $e) {
+            if ($replayed = $this->findAfterUniqueViolation($e, AnimalBreeding::class, $uuid)) {
+                return $this->successResponse(
+                    new AnimalBreedingResource($replayed->load(['dam.animalType', 'dam.animalBreed', 'sire.animalType', 'sire.animalBreed'])),
+                    'Breeding record already saved'
+                );
+            }
+
             return $this->errorResponse('Failed to save breeding record', 500, ['exception' => $e->getMessage()]);
         }
     }
@@ -128,7 +154,7 @@ class BreedingsController extends Controller
             ])
                 ->where(function ($query) use ($animal) {
                     $query->where('dam_id', $animal->id)
-                          ->orWhere('sire_id', $animal->id);
+                        ->orWhere('sire_id', $animal->id);
                 })
                 ->latest('service_date')
                 ->get();

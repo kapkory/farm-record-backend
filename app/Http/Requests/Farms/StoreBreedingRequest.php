@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Farms;
 
 use App\Models\Core\Animal;
-use App\Models\Core\AnimalBreeding;
 use App\Models\Core\Farm;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -18,17 +17,18 @@ class StoreBreedingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'farm_uuid'            => ['nullable', 'uuid', 'exists:farms,uuid'],
-            'dam_id'               => ['required', 'uuid', 'exists:animals,uuid'],
-            'sire_id'              => ['nullable', 'uuid', 'exists:animals,uuid'],
-            'sire_type'            => ['required', 'in:natural,ai,embryo'],
-            'service_date'         => ['required', 'date'],
-            'expected_birth_date'  => ['nullable', 'date', 'after:service_date'],
-            'status'               => ['nullable', 'in:pending,born,aborted,failed'],
-            'ai_straw_code'        => ['nullable', 'string', 'max:100'],
-            'ai_bull_name'         => ['nullable', 'string', 'max:255'],
-            'ai_technician'        => ['nullable', 'string', 'max:255'],
-            'notes'                => ['nullable', 'string'],
+            'uuid' => ['nullable', 'uuid'],
+            'farm_uuid' => ['nullable', 'uuid', 'exists:farms,uuid'],
+            'dam_id' => ['required', 'uuid', 'exists:animals,uuid'],
+            'sire_id' => ['nullable', 'uuid', 'exists:animals,uuid'],
+            'sire_type' => ['required', 'in:natural,ai,embryo'],
+            'service_date' => ['required', 'date'],
+            'expected_birth_date' => ['nullable', 'date', 'after:service_date'],
+            'status' => ['nullable', 'in:pending,born,aborted,failed'],
+            'ai_straw_code' => ['nullable', 'string', 'max:100'],
+            'ai_bull_name' => ['nullable', 'string', 'max:255'],
+            'ai_technician' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string'],
         ];
     }
 
@@ -71,4 +71,3 @@ class StoreBreedingRequest extends FormRequest
         });
     }
 }
-

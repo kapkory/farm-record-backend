@@ -14,6 +14,7 @@ class StoreLedgerTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'uuid' => ['nullable', 'uuid'],
             'date' => ['required', 'date'],
             'payment_method' => ['required', 'in:cash,mobile_money,bank,credit'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -29,4 +30,3 @@ class StoreLedgerTransactionRequest extends FormRequest
         ];
     }
 }
-

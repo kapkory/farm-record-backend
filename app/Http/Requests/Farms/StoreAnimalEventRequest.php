@@ -18,6 +18,7 @@ class StoreAnimalEventRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'uuid' => ['nullable', 'uuid'],
             'eventable_type' => ['required', 'in:animal_group,animal'],
             'eventable_uuid' => ['required', 'uuid'],
             'event_type' => ['required', 'in:birth,death,sale,purchase,weight_check,movement,other'],
@@ -39,6 +40,7 @@ class StoreAnimalEventRequest extends FormRequest
 
             if (! $eventable) {
                 $validator->errors()->add('eventable_uuid', 'The selected animal target could not be found.');
+
                 return;
             }
 
@@ -52,4 +54,3 @@ class StoreAnimalEventRequest extends FormRequest
         });
     }
 }
-

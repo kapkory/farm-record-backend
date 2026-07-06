@@ -9,15 +9,32 @@ use App\Models\Core\Animal;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\Farm;
 use App\Traits\ApiResponse;
+use App\Traits\ResolvesClientUuid;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Str;
 
 class AnimalsController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, ResolvesClientUuid;
 
     public function store(StoreAnimalRequest $request): JsonResponse
     {
+        [$uuid, $existing, $foreign] = $this->resolveClientUuid(
+            $request,
+            Animal::class,
+            fn (Animal $animal) => Farm::farmerOwned($request->user()->id)->where('id', $animal->farm_id)->exists()
+        );
+
+        if ($foreign) {
+            return $this->clientUuidTakenResponse();
+        }
+
+        if ($existing) {
+            return $this->successResponse(
+                new AnimalResource($existing->load(['farm', 'animalGroup', 'animalType', 'animalBreed'])),
+                'Animal already saved'
+            );
+        }
+
         try {
             $group = $request->filled('animal_group_uuid')
                 ? AnimalGroup::with('farm')->where('uuid', $request->validated('animal_group_uuid'))->firstOrFail()
@@ -27,10 +44,10 @@ class AnimalsController extends Controller
                 : null);
 
             $tagNumber = $request->validated('tag_number') ?? Animal::generateTagNumber();
-            $name      = $request->validated('name') ?? $tagNumber;
+            $name = $request->validated('name') ?? $tagNumber;
 
             $animal = Animal::create([
-                'uuid' => (string) Str::orderedUuid(),
+                'uuid' => $uuid,
                 'farm_id' => $farm->id,
                 'farmer_id' => $farm->farmer_id,
                 'animal_group_id' => $group?->id,
@@ -49,6 +66,13 @@ class AnimalsController extends Controller
 
             return $this->successResponse(new AnimalResource($animal), 'Animal saved successfully', 201);
         } catch (\Throwable $e) {
+            if ($replayed = $this->findAfterUniqueViolation($e, Animal::class, $uuid)) {
+                return $this->successResponse(
+                    new AnimalResource($replayed->load(['farm', 'animalGroup', 'animalType', 'animalBreed'])),
+                    'Animal already saved'
+                );
+            }
+
             return $this->errorResponse('Failed to save animal', 500, ['exception' => $e->getMessage()]);
         }
     }
@@ -113,7 +137,7 @@ class AnimalsController extends Controller
                 : $animal->farm);
 
             $tagNumber = $request->validated('tag_number') ?? $animal->tag_number ?? Animal::generateTagNumber();
-            $name      = $request->validated('name') ?? $animal->name ?? $tagNumber;
+            $name = $request->validated('name') ?? $animal->name ?? $tagNumber;
 
             $animal->update([
                 'farm_id' => $farm->id,
@@ -147,10 +171,10 @@ class AnimalsController extends Controller
 
         try {
             $animal->delete();
+
             return $this->successResponse(null, 'Animal deleted successfully');
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to delete animal', 500, ['exception' => $e->getMessage()]);
         }
     }
 }
-

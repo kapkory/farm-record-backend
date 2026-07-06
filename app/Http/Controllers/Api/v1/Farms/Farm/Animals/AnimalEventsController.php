@@ -9,22 +9,36 @@ use App\Models\Core\Animal;
 use App\Models\Core\AnimalEvent;
 use App\Models\Core\AnimalGroup;
 use App\Traits\ApiResponse;
+use App\Traits\ResolvesClientUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class AnimalEventsController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, ResolvesClientUuid;
 
     public function store(StoreAnimalEventRequest $request): JsonResponse
     {
+        [$uuid, $existing, $foreign] = $this->resolveClientUuid(
+            $request,
+            AnimalEvent::class,
+            fn (AnimalEvent $event) => $event->user_id === $request->user()->id
+        );
+
+        if ($foreign) {
+            return $this->clientUuidTakenResponse();
+        }
+
+        if ($existing) {
+            return $this->successResponse(new AnimalEventResource($existing), 'Animal event already saved');
+        }
+
         try {
             $eventable = $this->resolveEventable($request->validated('eventable_type'), $request->validated('eventable_uuid'));
 
             $event = AnimalEvent::create([
-                'uuid' => (string) Str::orderedUuid(),
+                'uuid' => $uuid,
                 'eventable_type' => $eventable::class,
                 'eventable_id' => $eventable->id,
                 'event_type' => $request->validated('event_type'),
@@ -37,6 +51,10 @@ class AnimalEventsController extends Controller
 
             return $this->successResponse(new AnimalEventResource($event), 'Animal event saved successfully', 201);
         } catch (\Throwable $e) {
+            if ($replayed = $this->findAfterUniqueViolation($e, AnimalEvent::class, $uuid)) {
+                return $this->successResponse(new AnimalEventResource($replayed), 'Animal event already saved');
+            }
+
             return $this->errorResponse('Failed to save animal event', 500, ['exception' => $e->getMessage()]);
         }
     }
@@ -67,6 +85,7 @@ class AnimalEventsController extends Controller
 
         try {
             $event->delete();
+
             return $this->successResponse(null, 'Animal event deleted successfully');
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to delete animal event', 500, ['exception' => $e->getMessage()]);
@@ -82,4 +101,3 @@ class AnimalEventsController extends Controller
         };
     }
 }
-

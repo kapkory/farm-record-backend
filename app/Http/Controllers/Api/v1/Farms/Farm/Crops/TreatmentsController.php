@@ -9,21 +9,19 @@ use App\Models\Core\Planting;
 use App\Models\Core\Treatment;
 use App\Services\Treatment\TreatmentExpenseRecorder;
 use App\Traits\ApiResponse;
+use App\Traits\ResolvesClientUuid;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class TreatmentsController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, ResolvesClientUuid;
 
-    public function __construct(protected TreatmentExpenseRecorder $treatmentExpenseRecorder)
-    {
-    }
+    public function __construct(protected TreatmentExpenseRecorder $treatmentExpenseRecorder) {}
 
     public function listPlantingTreatments($plantingUuid): JsonResponse
     {
@@ -68,6 +66,7 @@ class TreatmentsController extends Controller
     public function storeTreatment(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'uuid' => 'nullable|uuid',
             'planting_uuid' => 'nullable|uuid|exists:plantings,uuid',
             'animal_group_uuid' => 'nullable|uuid|exists:animal_groups,uuid',
             'animal_uuid' => 'nullable|uuid|exists:animals,uuid',
@@ -82,11 +81,27 @@ class TreatmentsController extends Controller
             'expense_amount' => 'nullable|numeric|min:0.01|required_if:record_expense,true,1',
         ]);
 
+        [$uuid, $existing, $foreign] = $this->resolveClientUuid(
+            $request,
+            Treatment::class,
+            fn (Treatment $treatment) => $treatment->user_id === $request->user()->id
+        );
+
+        if ($foreign) {
+            return $this->clientUuidTakenResponse();
+        }
+
+        if ($existing) {
+            return $this->successResponse($existing, 'Treatment already saved');
+        }
+
         try {
             $model = $data['model'] ?? 'planting';
-            $targetUuid = $model === 'animal_group'
-                ? $request->input('animal_group_uuid')
-                : $request->input('animal_uuid');
+            $targetUuid = match ($model) {
+                'animal_group' => $request->input('animal_group_uuid'),
+                'animal' => $request->input('animal_uuid'),
+                default => $request->input('planting_uuid'),
+            };
 
             if (! $targetUuid) {
                 return $this->errorResponse('A valid target UUID is required for the selected treatment model.', 422);
@@ -94,9 +109,9 @@ class TreatmentsController extends Controller
 
             $treatmentable = $this->resolveTreatmentable($model, $targetUuid);
 
-            $treatment = DB::transaction(function () use ($request, $data, $treatmentable, $model) {
+            $treatment = DB::transaction(function () use ($request, $data, $treatmentable, $model, $uuid) {
                 $treatment = Treatment::create([
-                    'uuid' => (string) Str::orderedUuid(),
+                    'uuid' => $uuid,
                     'treatment_type_id' => $data['treatment_type_id'],
                     'farm_id' => $treatmentable->farm_id,
                     'details' => $data['details'],
@@ -127,6 +142,10 @@ class TreatmentsController extends Controller
 
             return $this->successResponse($treatment, 'Treatment saved successfully', 201);
         } catch (\Throwable $e) {
+            if ($replayed = $this->findAfterUniqueViolation($e, Treatment::class, $uuid)) {
+                return $this->successResponse($replayed, 'Treatment already saved');
+            }
+
             return $this->errorResponse('Failed to save treatment', 500, ['exception' => $e->getMessage()]);
         }
     }

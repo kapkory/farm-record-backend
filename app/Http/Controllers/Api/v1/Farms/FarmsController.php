@@ -6,14 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Core\Farm;
 use App\Repositories\SearchRepo;
 use App\Traits\ApiResponse;
+use App\Traits\ResolvesClientUuid;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class FarmsController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, ResolvesClientUuid;
 
     /**
      * Display a listing of the resource.
@@ -22,14 +22,16 @@ class FarmsController extends Controller
     {
         // simple pagination; adjust per requirements
         $perPage = (int) $request->query('per_page', 15);
-        $farms = Farm::leftJoin('farmers','farmers.id','farms.farmer_id')
-                ->farmerOwned(auth()->id())
-                ->select('farms.*','farmers.display_name as owner');
-//                ->get();
-//        dd($farms);
+        $farms = Farm::leftJoin('farmers', 'farmers.id', 'farms.farmer_id')
+            ->farmerOwned(auth()->id())
+            ->select('farms.*', 'farmers.display_name as owner');
+        //                ->get();
+        //        dd($farms);
 
-         if (\request('all'))
+        if (\request('all')) {
             return $farms->get();
+        }
+
         return SearchRepo::of($farms)
             ->addColumn('status', function ($farm) {
                 return $farm->status == 1 ? 'active' : 'inactive';
@@ -44,6 +46,7 @@ class FarmsController extends Controller
     public function store(Request $request)
     {
         $rules = [
+            'uuid' => ['nullable', 'uuid'],
             'name' => ['required', 'string', 'max:255'],
             'location' => ['nullable', 'string', 'max:255'],
             'size' => ['nullable', 'numeric'],
@@ -51,7 +54,7 @@ class FarmsController extends Controller
             'established_date' => ['nullable', 'date'],
             'description' => ['nullable', 'string'],
             'type' => ['nullable', 'in:mixed,crop,animal'],
-            'ownership_type' => ['nullable', 'in:leased,owned,shared']
+            'ownership_type' => ['nullable', 'in:leased,owned,shared'],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -60,9 +63,23 @@ class FarmsController extends Controller
             return $this->errorResponse('Validation failed', 422, $validator->errors()->toArray());
         }
 
+        [$uuid, $existing, $foreign] = $this->resolveClientUuid(
+            $request,
+            Farm::class,
+            fn (Farm $farm) => Farm::farmerOwned($request->user()->id)->where('id', $farm->id)->exists()
+        );
+
+        if ($foreign) {
+            return $this->clientUuidTakenResponse();
+        }
+
+        if ($existing) {
+            return $this->successResponse($existing, 'Farm already saved');
+        }
+
         try {
             $data = $validator->validated();
-            $data['uuid'] = Str::orderedUuid();
+            $data['uuid'] = $uuid;
             $data['established_date'] = $request->established_date != '' ? Carbon::parse($request->established_date)->toDateString() : null;
 
             $farmer = $request->user()->farmers()->wherePivot('role', 'owner')->first()
@@ -78,6 +95,10 @@ class FarmsController extends Controller
 
             return $this->successResponse($farm, 'Farm created successfully', 201);
         } catch (\Throwable $e) {
+            if ($replayed = $this->findAfterUniqueViolation($e, Farm::class, $uuid)) {
+                return $this->successResponse($replayed, 'Farm already saved');
+            }
+
             return $this->errorResponse('Failed to create farm', 500, ['exception' => $e->getMessage()]);
         }
     }
@@ -149,6 +170,7 @@ class FarmsController extends Controller
 
         try {
             $farm->delete();
+
             return $this->successResponse([], 'Farm deleted successfully', 200);
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to delete farm', 500, ['exception' => $e->getMessage()]);

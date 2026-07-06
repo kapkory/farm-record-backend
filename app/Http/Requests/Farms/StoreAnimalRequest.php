@@ -20,6 +20,7 @@ class StoreAnimalRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'uuid' => ['nullable', 'uuid'],
             'animal_group_uuid' => ['nullable', 'uuid', 'exists:animal_groups,uuid'],
             'farm_uuid' => ['nullable', 'uuid', 'exists:farms,uuid'],
             'animal_type_id' => ['nullable', 'integer', 'exists:animal_types,id'],
@@ -107,4 +108,3 @@ class StoreAnimalRequest extends FormRequest
         });
     }
 }
-

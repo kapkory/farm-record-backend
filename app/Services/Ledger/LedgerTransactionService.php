@@ -7,13 +7,12 @@ use App\Models\Core\FarmerUser;
 use App\Models\Core\LedgerAccount;
 use App\Models\Core\LedgerEntry;
 use App\Models\Core\LedgerTransaction;
-use App\Models\Core\Planting;
 use App\Models\User;
 use App\Services\Ledger\Resolvers\TransactionableResolver;
 use App\Services\Ledger\Support\LedgerPostingRuleResolver;
 use Illuminate\Database\DatabaseManager;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class LedgerTransactionService
 {
@@ -21,8 +20,7 @@ class LedgerTransactionService
         protected DatabaseManager $db,
         protected TransactionableResolver $transactionableResolver,
         protected LedgerPostingRuleResolver $postingRuleResolver,
-    ) {
-    }
+    ) {}
 
     public function store(User $user, LedgerTransactionDTO $dto): LedgerTransaction
     {
@@ -36,7 +34,7 @@ class LedgerTransactionService
 
         return $this->db->transaction(function () use ($dto, $transactionable, $primaryAccount, $contraAccount, $user) {
             $transaction = LedgerTransaction::create([
-                'uuid' => (string) Str::orderedUuid(),
+                'uuid' => $dto->uuid ?? (string) Str::orderedUuid(),
                 'farm_id' => $dto->farmId,
                 'date' => $dto->date->toDateString(),
                 'description' => $dto->description,
@@ -154,4 +152,3 @@ class LedgerTransactionService
         return $account;
     }
 }
-

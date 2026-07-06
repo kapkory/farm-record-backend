@@ -10,22 +10,37 @@ use App\Models\Core\Planting;
 use App\Models\Core\Production;
 use App\Services\Production\ProductionExpenseRecorder;
 use App\Traits\ApiResponse;
+use App\Traits\ResolvesClientUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class ProductionsController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, ResolvesClientUuid;
 
-    public function __construct(protected ProductionExpenseRecorder $productionExpenseRecorder)
-    {
-    }
+    public function __construct(protected ProductionExpenseRecorder $productionExpenseRecorder) {}
 
     public function store(StoreProductionRequest $request): JsonResponse
     {
+        [$uuid, $existing, $foreign] = $this->resolveClientUuid(
+            $request,
+            Production::class,
+            fn (Production $production) => $production->user_id === $request->user()->id
+        );
+
+        if ($foreign) {
+            return $this->clientUuidTakenResponse();
+        }
+
+        if ($existing) {
+            return $this->successResponse(
+                new ProductionResource($existing->load('productionable')),
+                'Production already saved'
+            );
+        }
+
         try {
             $productionable = $this->resolveProductionable(
                 $request->validated('productionable_type'),
@@ -34,9 +49,9 @@ class ProductionsController extends Controller
 
             $validated = $request->validated();
 
-            $production = DB::transaction(function () use ($request, $productionable, $validated) {
+            $production = DB::transaction(function () use ($request, $productionable, $validated, $uuid) {
                 $production = Production::create([
-                    'uuid' => (string) Str::orderedUuid(),
+                    'uuid' => $uuid,
                     'productionable_type' => $productionable::class,
                     'productionable_id' => $productionable->getKey(),
                     'name' => $validated['name'],
@@ -58,6 +73,13 @@ class ProductionsController extends Controller
 
             return $this->successResponse(new ProductionResource($production), 'Production saved successfully', 201);
         } catch (\Throwable $e) {
+            if ($replayed = $this->findAfterUniqueViolation($e, Production::class, $uuid)) {
+                return $this->successResponse(
+                    new ProductionResource($replayed->load('productionable')),
+                    'Production already saved'
+                );
+            }
+
             return $this->errorResponse('Failed to save production', 500, ['exception' => $e->getMessage()]);
         }
     }

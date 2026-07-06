@@ -19,9 +19,9 @@ readonly class LedgerTransactionDTO
         public string $transactionFor,
         public string $transactionUuid,
         public ?int $quantity,
-        public ?float $unitCost
-    ) {
-    }
+        public ?float $unitCost,
+        public ?string $uuid = null
+    ) {}
 
     public static function fromRequest(array $validated, int $farmerId, int $farmId): self
     {
@@ -41,6 +41,7 @@ readonly class LedgerTransactionDTO
             transactionUuid: $validated['transaction_uuid'],
             quantity: isset($entry['quantity']) ? (int) $entry['quantity'] : null,
             unitCost: isset($entry['unit_cost']) ? (float) $entry['unit_cost'] : null,
+            uuid: $validated['uuid'] ?? null,
         );
     }
 }
