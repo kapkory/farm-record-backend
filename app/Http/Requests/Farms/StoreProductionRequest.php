@@ -20,7 +20,7 @@ class StoreProductionRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'date' => ['required', 'date'],
             'trace_number' => ['nullable', 'string', 'max:255'],
-            'quantity' => ['required', 'integer', 'min:1'],
+            'quantity' => ['required', 'numeric', 'min:0.01'],
             'unit' => ['required', 'string', 'max:100'],
             'grade' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string'],

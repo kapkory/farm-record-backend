@@ -26,7 +26,7 @@ class Production extends Model
 
     protected $casts = [
         'date' => 'date',
-        'quantity' => 'integer',
+        'quantity' => 'float',
     ];
 
     public function productionable(): MorphTo

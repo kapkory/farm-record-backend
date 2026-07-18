@@ -10,6 +10,7 @@ use App\Http\Resources\Tasks\TaskResource;
 use App\Models\Core\Animal;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\Farm;
+use App\Models\Core\Hive;
 use App\Models\Core\Planting;
 use App\Models\Core\Task;
 use App\Models\Core\Treatment;
@@ -31,6 +32,7 @@ class TasksController extends Controller
             'treatment' => Treatment::where('uuid', $uuid)->firstOrFail(),
             'animal_group' => AnimalGroup::where('uuid', $uuid)->firstOrFail(),
             'animal' => Animal::where('uuid', $uuid)->firstOrFail(),
+            'hive' => Hive::where('uuid', $uuid)->firstOrFail(),
             default => null,
         };
     }

@@ -6,9 +6,11 @@ use App\Models\Core\Animal;
 use App\Models\Core\AnimalEvent;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\Farm;
+use App\Models\Core\Hive;
 use App\Models\Core\Planting;
 use App\Models\Core\Treatment;
 use App\Observers\AnimalEventObserver;
+use App\Observers\HiveObserver;
 use App\Observers\PlantingObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -39,9 +41,11 @@ class AppServiceProvider extends ServiceProvider
             'animal' => Animal::class,
             'farm' => Farm::class,
             'treatment' => Treatment::class,
+            'hive' => Hive::class,
         ]);
 
         Planting::observe(PlantingObserver::class);
         AnimalEvent::observe(AnimalEventObserver::class);
+        Hive::observe(HiveObserver::class);
     }
 }

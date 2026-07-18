@@ -5,6 +5,7 @@ namespace App\Models\Core;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -62,6 +63,16 @@ class AnimalGroup extends Model
         return $this->hasMany(Animal::class);
     }
 
+    public function hives(): HasMany
+    {
+        return $this->hasMany(Hive::class);
+    }
+
+    public function apiaryProfile(): HasOne
+    {
+        return $this->hasOne(ApiaryProfile::class);
+    }
+
     public function treatments(): MorphMany
     {
         return $this->morphMany(Treatment::class, 'treatmentable');
@@ -87,4 +98,3 @@ class AnimalGroup extends Model
         return $this->morphMany(AnimalEvent::class, 'eventable');
     }
 }
-
