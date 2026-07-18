@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class Crop extends Model
 {
-    protected $fillable = ['uuid','name','description'];
+    protected $fillable = ['uuid', 'name', 'description', 'type', 'status'];
 }

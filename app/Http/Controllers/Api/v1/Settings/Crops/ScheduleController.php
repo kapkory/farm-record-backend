@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\Crops\SaveScheduleRequest;
 use App\Http\Resources\Settings\Crops\ScheduleResource;
 use App\Models\Core\Schedule;
-use App\Models\Core\ScheduleActivity;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,9 +32,9 @@ class ScheduleController extends Controller
 
             $schedule = DB::transaction(function () use ($data, $farmer, $request) {
                 $schedule = Schedule::create([
-                    'uuid'      => (string) Str::orderedUuid(),
-                    'name'      => $data['name'],
-                    'crop_id'   => $data['crop_id'],
+                    'uuid' => (string) Str::orderedUuid(),
+                    'name' => $data['name'],
+                    'crop_id' => $data['crop_id'],
                     'farmer_id' => $farmer->id,
                 ]);
 
@@ -63,14 +62,18 @@ class ScheduleController extends Controller
             return $this->errorResponse('Schedule not found', 404);
         }
 
+        if ($schedule->is_system) {
+            return $this->errorResponse('Default schedules cannot be edited. Duplicate it to make your own version.', 403);
+        }
+
         try {
             $data = $request->validated();
 
             DB::transaction(function () use ($schedule, $data, $request) {
                 $schedule->update([
-                    'name'    => $data['name'],
+                    'name' => $data['name'],
                     'crop_id' => $data['crop_id'],
-                    'status'  => ($data['status'] ?? 'active') === 'active' ? 1 : 0,
+                    'status' => ($data['status'] ?? 'active') === 'active' ? 1 : 0,
                 ]);
 
                 $this->syncActivities($schedule, $data['activities'], $request->user()->id);
@@ -95,9 +98,13 @@ class ScheduleController extends Controller
             return $this->errorResponse('No farmer profile found for this user.', 403);
         }
 
+        // Return the farmer's own schedules plus the global system templates
+        // (e.g. the default Maize and Coffee schedules) available to everyone.
         $query = Schedule::with(['activities', 'crop:id,name'])
-            ->whereIn('farmer_id', $farmerIds);
-
+            ->where(function ($q) use ($farmerIds) {
+                $q->whereIn('farmer_id', $farmerIds)
+                    ->orWhere('is_system', true);
+            });
 
         if ($request->filled('crop_id')) {
             $query->where('crop_id', $request->query('crop_id'));
@@ -135,6 +142,10 @@ class ScheduleController extends Controller
             return $this->errorResponse('Schedule not found', 404);
         }
 
+        if ($schedule->is_system) {
+            return $this->errorResponse('Default schedules cannot be deleted.', 403);
+        }
+
         try {
             DB::transaction(function () use ($schedule) {
                 $schedule->activities()->delete();
@@ -166,11 +177,11 @@ class ScheduleController extends Controller
             $days = $this->convertToDays($activity['offset_value'], $activity['offset_unit']);
 
             $attributes = [
-                'activity_name'       => $activity['title'],
+                'activity_name' => $activity['title'],
                 'days_since_planting' => $days,
-                'priority'            => $activity['priority'],
-                'notes'               => $activity['description'] ?? null,
-                'user_id'             => $userId,
+                'priority' => $activity['priority'],
+                'notes' => $activity['description'] ?? null,
+                'user_id' => $userId,
             ];
 
             if (! empty($activity['id'])) {
@@ -192,9 +203,9 @@ class ScheduleController extends Controller
     private function convertToDays(int $value, string $unit): int
     {
         return match ($unit) {
-            'weeks'  => $value * 7,
+            'weeks' => $value * 7,
             'months' => $value * 30,
-            default  => $value,
+            default => $value,
         };
     }
 

@@ -17,11 +17,13 @@ class LedgerAccountsSeeder extends Seeder
             'name' => 'Assets',
             'type' => 'asset',
             'children' => [
-                ['code' => '1100', 'name' => 'Cash', 'type' => 'asset'],
-                ['code' => '1200', 'name' => 'Bank', 'type' => 'asset'],
-                ['code' => '1300', 'name' => 'Inventory', 'type' => 'asset', 'note' => 'Seeds, Fertilizer, Feed'],
-                ['code' => '1400', 'name' => 'Livestock', 'type' => 'asset'],
-                ['code' => '1500', 'name' => 'Equipment', 'type' => 'asset'],
+                ['code' => '1100', 'name' => 'Cash', 'type' => 'asset', 'note' => 'Money you keep as cash on the farm'],
+                ['code' => '1150', 'name' => 'Mobile Money', 'type' => 'asset', 'note' => 'M-Pesa and other mobile wallets'],
+                ['code' => '1200', 'name' => 'Bank', 'type' => 'asset', 'note' => 'Money in your bank or SACCO account'],
+                ['code' => '1300', 'name' => 'Inventory', 'type' => 'asset', 'note' => 'Seeds, fertilizer and feed you have in store'],
+                ['code' => '1350', 'name' => 'Produce in Store', 'type' => 'asset', 'note' => 'Harvested crops not yet sold'],
+                ['code' => '1400', 'name' => 'Livestock', 'type' => 'asset', 'note' => 'Value of your animals'],
+                ['code' => '1500', 'name' => 'Equipment & Tools', 'type' => 'asset', 'note' => 'Machines, tools and other durable items'],
             ],
         ],
         [
@@ -29,8 +31,8 @@ class LedgerAccountsSeeder extends Seeder
             'name' => 'Liabilities',
             'type' => 'liability',
             'children' => [
-                ['code' => '2100', 'name' => 'Accounts Payable', 'type' => 'liability'],
-                ['code' => '2200', 'name' => 'Loans', 'type' => 'liability'],
+                ['code' => '2100', 'name' => 'Suppliers to Pay', 'type' => 'liability', 'note' => 'Money you owe suppliers (agrovet, dealers)'],
+                ['code' => '2200', 'name' => 'Loans', 'type' => 'liability', 'note' => 'Money borrowed from bank, SACCO or others'],
             ],
         ],
         [
@@ -38,17 +40,19 @@ class LedgerAccountsSeeder extends Seeder
             'name' => 'Equity',
             'type' => 'equity',
             'children' => [
-                ['code' => '3100', 'name' => "Owner's Capital", 'type' => 'equity'],
+                ['code' => '3100', 'name' => "Owner's Capital", 'type' => 'equity', 'note' => 'Your own money put into the farm'],
+                ['code' => '3200', 'name' => 'Drawings', 'type' => 'equity', 'note' => 'Money or produce you take for personal use'],
             ],
         ],
         [
             'code' => '4000',
-            'name' => 'Revenue',
+            'name' => 'Income',
             'type' => 'revenue',
             'children' => [
-                ['code' => '4100', 'name' => 'Crop Sales', 'type' => 'revenue'],
-                ['code' => '4200', 'name' => 'Livestock Sales', 'type' => 'revenue'],
-                ['code' => '4300', 'name' => 'Other Income', 'type' => 'revenue'],
+                ['code' => '4100', 'name' => 'Crop Sales', 'type' => 'revenue', 'note' => 'Money from selling crops and produce'],
+                ['code' => '4200', 'name' => 'Livestock Sales', 'type' => 'revenue', 'note' => 'Money from selling animals'],
+                ['code' => '4250', 'name' => 'Milk, Eggs & Honey Sales', 'type' => 'revenue', 'note' => 'Money from animal products'],
+                ['code' => '4300', 'name' => 'Other Income', 'type' => 'revenue', 'note' => 'Grants, subsidies and any other income'],
             ],
         ],
         [
@@ -56,17 +60,17 @@ class LedgerAccountsSeeder extends Seeder
             'name' => 'Expenses',
             'type' => 'expense',
             'children' => [
-                ['code' => '5100', 'name' => 'Seeds & Seedlings', 'type' => 'expense'],
-                ['code' => '5200', 'name' => 'Fertilizer & Chemicals', 'type' => 'expense'],
-                ['code' => '5300', 'name' => 'Labor', 'type' => 'expense'],
-                ['code' => '5400', 'name' => 'Equipment & Maintenance', 'type' => 'expense'],
-                ['code' => '5500', 'name' => 'Veterinary', 'type' => 'expense'],
-                ['code' => '5600', 'name' => 'Feed', 'type' => 'expense'],
-                ['code' => '5700', 'name' => 'Transport', 'type' => 'expense'],
-                ['code' => '5800', 'name' => 'Utilities', 'type' => 'expense', 'note' => 'Water, Electricity'],
-                ['code' => '5900', 'name' => 'Land Rent / Lease', 'type' => 'expense'],
-                ['code' => '5950', 'name' => 'Harvest Expenses', 'type' => 'expense'],
-                ['code' => '5950', 'name' => 'General Expenses', 'type' => 'expense'],
+                ['code' => '5100', 'name' => 'Seeds & Seedlings', 'type' => 'expense', 'note' => 'What you spend on seeds and seedlings'],
+                ['code' => '5200', 'name' => 'Fertilizer & Chemicals', 'type' => 'expense', 'note' => 'Fertilizer, pesticides and sprays'],
+                ['code' => '5300', 'name' => 'Labour', 'type' => 'expense', 'note' => 'Wages paid to farm workers'],
+                ['code' => '5400', 'name' => 'Equipment & Maintenance', 'type' => 'expense', 'note' => 'Repairs, servicing and fuel'],
+                ['code' => '5500', 'name' => 'Veterinary & Medicine', 'type' => 'expense', 'note' => 'Vet visits, drugs and vaccines'],
+                ['code' => '5600', 'name' => 'Animal Feed', 'type' => 'expense', 'note' => 'Feed and supplements for animals'],
+                ['code' => '5700', 'name' => 'Transport', 'type' => 'expense', 'note' => 'Moving inputs and produce'],
+                ['code' => '5800', 'name' => 'Utilities', 'type' => 'expense', 'note' => 'Water and electricity'],
+                ['code' => '5900', 'name' => 'Land Rent / Lease', 'type' => 'expense', 'note' => 'Rent paid for land'],
+                ['code' => '5950', 'name' => 'Harvest Expenses', 'type' => 'expense', 'note' => 'Picking, sorting and packing costs'],
+                ['code' => '5990', 'name' => 'General Expenses', 'type' => 'expense', 'note' => 'Any other farm costs'],
             ],
         ],
     ];
@@ -93,7 +97,7 @@ class LedgerAccountsSeeder extends Seeder
     {
         $descriptionParts = ["Code: {$account['code']}"];
 
-        if (!empty($account['note'])) {
+        if (! empty($account['note'])) {
             $descriptionParts[] = (string) $account['note'];
         }
 
@@ -115,4 +119,3 @@ class LedgerAccountsSeeder extends Seeder
         );
     }
 }
-

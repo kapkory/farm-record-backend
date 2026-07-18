@@ -17,16 +17,18 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-//        User::factory()->create([
-//            'name' => 'Test User',
-//            'email' => 'test@example.com',
-//        ]);
+        //        User::factory()->create([
+        //            'name' => 'Test User',
+        //            'email' => 'test@example.com',
+        //        ]);
         // Countries - Global lookup table
-//        $this->command->info('📍 Seeding countries...');
-//        $this->call(CountriesSeeder::class);
-//
-//        $this->command->info('📒 Seeding ledger accounts...');
-//        $this->call(LedgerAccountsSeeder::class);
+        //        $this->command->info('📍 Seeding countries...');
+        //        $this->call(CountriesSeeder::class);
+
+        // Global lookup / default data every farmer needs
+        $this->call(LedgerAccountsSeeder::class);
+        $this->call(CropsSeeder::class);
+        $this->call(SchedulesSeeder::class); // depends on CropsSeeder
 
         $this->command->info('🐄 Seeding animal types...');
         $this->call(AnimalTypesSeeder::class);

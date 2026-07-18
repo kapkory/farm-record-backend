@@ -16,7 +16,12 @@ class Schedule extends Model
         'name',
         'crop_id',
         'farmer_id',
+        'is_system',
         'status',
+    ];
+
+    protected $casts = [
+        'is_system' => 'boolean',
     ];
 
     public function activities(): HasMany
