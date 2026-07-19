@@ -20,6 +20,7 @@ class LedgerAccountsSeeder extends Seeder
                 ['code' => '1100', 'name' => 'Cash', 'type' => 'asset', 'note' => 'Money you keep as cash on the farm'],
                 ['code' => '1150', 'name' => 'Mobile Money', 'type' => 'asset', 'note' => 'M-Pesa and other mobile wallets'],
                 ['code' => '1200', 'name' => 'Bank', 'type' => 'asset', 'note' => 'Money in your bank or SACCO account'],
+                ['code' => '1250', 'name' => 'Accounts Receivable', 'type' => 'asset', 'note' => 'Money buyers still owe you for sales'],
                 ['code' => '1300', 'name' => 'Inventory', 'type' => 'asset', 'note' => 'Seeds, fertilizer and feed you have in store'],
                 ['code' => '1350', 'name' => 'Produce in Store', 'type' => 'asset', 'note' => 'Harvested crops not yet sold'],
                 ['code' => '1400', 'name' => 'Livestock', 'type' => 'asset', 'note' => 'Value of your animals'],

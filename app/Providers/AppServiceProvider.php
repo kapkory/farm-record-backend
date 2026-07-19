@@ -8,6 +8,7 @@ use App\Models\Core\AnimalGroup;
 use App\Models\Core\Farm;
 use App\Models\Core\Hive;
 use App\Models\Core\Planting;
+use App\Models\Core\Sale;
 use App\Models\Core\Treatment;
 use App\Observers\AnimalEventObserver;
 use App\Observers\AnimalGroupObserver;
@@ -44,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
             'farm' => Farm::class,
             'treatment' => Treatment::class,
             'hive' => Hive::class,
+            'sale' => Sale::class,
         ]);
 
         Planting::observe(PlantingObserver::class);

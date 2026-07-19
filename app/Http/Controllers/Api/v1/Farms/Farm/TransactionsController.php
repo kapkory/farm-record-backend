@@ -9,8 +9,10 @@ use App\Http\Resources\Farms\Farm\LedgerTransactionResource;
 use App\Models\Core\Animal;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\Farm;
+use App\Models\Core\Hive;
 use App\Models\Core\LedgerTransaction;
 use App\Models\Core\Planting;
+use App\Models\Core\Sale;
 use App\Services\Ledger\LedgerTransactionService;
 use App\Traits\ApiResponse;
 use App\Traits\ResolvesClientUuid;
@@ -107,6 +109,8 @@ class TransactionsController extends Controller
             'animal_group' => AnimalGroup::query()->where('uuid', $transactionUuid)->value('farm_id'),
             'animal' => Animal::query()->where('uuid', $transactionUuid)->value('farm_id')
                 ?? throw new ModelNotFoundException,
+            'hive' => Hive::query()->where('uuid', $transactionUuid)->value('farm_id')
+                ?? throw new ModelNotFoundException,
             default => throw new InvalidArgumentException('Unsupported transaction target.'),
         };
     }
@@ -118,6 +122,8 @@ class TransactionsController extends Controller
             'planting' => Planting::class,
             'animal_group' => AnimalGroup::class,
             'animal' => Animal::class,
+            'hive' => Hive::class,
+            'sale' => Sale::class,
             default => throw new InvalidArgumentException('Unsupported transaction target.'),
         };
     }

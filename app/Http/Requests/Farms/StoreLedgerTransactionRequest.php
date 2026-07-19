@@ -19,7 +19,7 @@ class StoreLedgerTransactionRequest extends FormRequest
             'payment_method' => ['required', 'in:cash,mobile_money,bank,credit'],
             'description' => ['nullable', 'string', 'max:1000'],
             'reference_number' => ['nullable', 'string', 'max:255'],
-            'transaction_for' => ['required', 'in:planting,animal,animal_group'],
+            'transaction_for' => ['required', 'in:planting,animal,animal_group,hive'],
             'type' => ['required', 'in:expense,income,asset,liability,equity,revenue'],
             'transaction_uuid' => ['required', 'uuid'],
             'entries' => ['required', 'array', 'size:1'],

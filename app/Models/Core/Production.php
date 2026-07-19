@@ -3,6 +3,7 @@
 namespace App\Models\Core;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -32,5 +33,11 @@ class Production extends Model
     public function productionable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /** Sale lines that were sold out of this collection. */
+    public function saleItems(): HasMany
+    {
+        return $this->hasMany(SaleItem::class);
     }
 }
