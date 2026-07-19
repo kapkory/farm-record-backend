@@ -21,5 +21,5 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           command_timeout: 30m   # docker builds can be slow
           script: |
-            cd ~/farmconsul
+            cd ~/farm-record
             ./deploy.sh --build --migrate
