@@ -20,6 +20,7 @@ class AnimalGroup extends Model
         'field_id',
         'animal_type_id',
         'animal_breed_id',
+        'treatment_plan_id',
         'name',
         'initial_count',
         'current_count',
@@ -56,6 +57,11 @@ class AnimalGroup extends Model
     public function animalBreed(): BelongsTo
     {
         return $this->belongsTo(AnimalBreed::class);
+    }
+
+    public function treatmentPlan(): BelongsTo
+    {
+        return $this->belongsTo(TreatmentPlan::class);
     }
 
     public function animals(): HasMany

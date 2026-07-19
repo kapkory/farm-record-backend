@@ -32,5 +32,8 @@ class DatabaseSeeder extends Seeder
 
         $this->command->info('🐄 Seeding animal types...');
         $this->call(AnimalTypesSeeder::class);
+
+        $this->call(TreatmentTypesSeeder::class);
+        $this->call(TreatmentPlansSeeder::class); // depends on AnimalTypesSeeder + TreatmentTypesSeeder
     }
 }

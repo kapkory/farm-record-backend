@@ -8,6 +8,7 @@ use App\Http\Resources\Farms\Farm\AnimalGroupResource;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\Farm;
 use App\Models\Core\Field;
+use App\Models\Core\TreatmentPlan;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -23,14 +24,18 @@ class AnimalGroupsController extends Controller
             $field = $request->filled('field_uuid')
                 ? Field::where('uuid', $request->validated('field_uuid'))->first()
                 : null;
+            $treatmentPlan = $request->filled('treatment_plan_uuid')
+                ? TreatmentPlan::where('uuid', $request->validated('treatment_plan_uuid'))->first()
+                : null;
 
             $group = AnimalGroup::create([
                 'uuid' => (string) Str::orderedUuid(),
                 'farm_id' => $farm->id,
-                'farmer_id'=> $farm->farmer_id,
+                'farmer_id' => $farm->farmer_id,
                 'field_id' => $field?->id,
                 'animal_type_id' => $request->validated('animal_type_id'),
                 'animal_breed_id' => $request->validated('animal_breed_id'),
+                'treatment_plan_id' => $treatmentPlan?->id,
                 'name' => $request->validated('name'),
                 'initial_count' => $request->validated('initial_count'),
                 'current_count' => $request->validated('initial_count'),
@@ -126,10 +131,10 @@ class AnimalGroupsController extends Controller
 
         try {
             $group->delete();
+
             return $this->successResponse(null, 'Animal group deleted successfully');
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to delete animal group', 500, ['exception' => $e->getMessage()]);
         }
     }
 }
-

@@ -8,6 +8,7 @@ use App\Http\Resources\Farms\Farm\AnimalResource;
 use App\Models\Core\Animal;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\Farm;
+use App\Models\Core\TreatmentPlan;
 use App\Traits\ApiResponse;
 use App\Traits\ResolvesClientUuid;
 use Illuminate\Http\JsonResponse;
@@ -46,6 +47,10 @@ class AnimalsController extends Controller
             $tagNumber = $request->validated('tag_number') ?? Animal::generateTagNumber();
             $name = $request->validated('name') ?? $tagNumber;
 
+            $treatmentPlan = $request->filled('treatment_plan_uuid')
+                ? TreatmentPlan::where('uuid', $request->validated('treatment_plan_uuid'))->first()
+                : null;
+
             $animal = Animal::create([
                 'uuid' => $uuid,
                 'farm_id' => $farm->id,
@@ -53,6 +58,7 @@ class AnimalsController extends Controller
                 'animal_group_id' => $group?->id,
                 'animal_type_id' => $group?->animal_type_id ?? $request->validated('animal_type_id'),
                 'animal_breed_id' => $request->validated('animal_breed_id') ?? $group?->animal_breed_id,
+                'treatment_plan_id' => $treatmentPlan?->id,
                 'tag_number' => $tagNumber,
                 'name' => $name,
                 'gender' => $request->validated('gender') ?? 'unknown',

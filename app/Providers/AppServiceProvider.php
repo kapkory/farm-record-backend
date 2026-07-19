@@ -10,6 +10,8 @@ use App\Models\Core\Hive;
 use App\Models\Core\Planting;
 use App\Models\Core\Treatment;
 use App\Observers\AnimalEventObserver;
+use App\Observers\AnimalGroupObserver;
+use App\Observers\AnimalObserver;
 use App\Observers\HiveObserver;
 use App\Observers\PlantingObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -46,6 +48,8 @@ class AppServiceProvider extends ServiceProvider
 
         Planting::observe(PlantingObserver::class);
         AnimalEvent::observe(AnimalEventObserver::class);
+        AnimalGroup::observe(AnimalGroupObserver::class);
+        Animal::observe(AnimalObserver::class);
         Hive::observe(HiveObserver::class);
     }
 }

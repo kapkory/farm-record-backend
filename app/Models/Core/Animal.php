@@ -20,6 +20,7 @@ class Animal extends Model
         'animal_group_id',
         'animal_type_id',
         'animal_breed_id',
+        'treatment_plan_id',
         'tag_number',
         'name',
         'gender',
@@ -35,7 +36,7 @@ class Animal extends Model
     protected $casts = [
         'date_of_birth' => 'date',
         'acquisition_date' => 'date',
-        'gestation_adjustment_days'  => 'integer'];
+        'gestation_adjustment_days' => 'integer'];
 
     public function farm(): BelongsTo
     {
@@ -122,12 +123,12 @@ class Animal extends Model
     {
         $latest = static::withTrashed()
             ->where('tag_number', 'LIKE', 'FC-%')
-            ->orderByRaw("CAST(SUBSTRING(tag_number, 4) AS UNSIGNED) DESC")
+            ->orderByRaw('CAST(SUBSTRING(tag_number, 4) AS UNSIGNED) DESC')
             ->value('tag_number');
 
         $next = $latest ? ((int) ltrim(substr($latest, 3), '0') ?: 0) + 1 : 1;
 
-        return 'FC-' . str_pad($next, 6, '0', STR_PAD_LEFT);
+        return 'FC-'.str_pad($next, 6, '0', STR_PAD_LEFT);
     }
 
     public function scopeStandalone(Builder $query): Builder

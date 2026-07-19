@@ -23,6 +23,7 @@ class StoreAnimalGroupRequest extends FormRequest
             'field_uuid' => ['nullable', 'uuid', 'exists:fields,uuid'],
             'animal_type_id' => ['required', 'integer', 'exists:animal_types,id'],
             'animal_breed_id' => ['nullable', 'integer', 'exists:animal_breeds,id'],
+            'treatment_plan_uuid' => ['nullable', 'uuid', 'exists:treatment_plans,uuid'],
             'name' => ['required', 'string', 'max:255'],
             'initial_count' => ['required', 'integer', 'min:1'],
             'acquired_date' => ['required', 'date'],
@@ -62,4 +63,3 @@ class StoreAnimalGroupRequest extends FormRequest
         });
     }
 }
-
