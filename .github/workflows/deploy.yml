@@ -21,5 +21,6 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           command_timeout: 30m   # docker builds can be slow
           script: |
+            git config --global url."https://github.com/kapkory/farm-record-backend".insteadOf "git@github.com:kapkory/farm-record-backend"
             cd ~/farm-record
             ./deploy.sh --build --migrate
