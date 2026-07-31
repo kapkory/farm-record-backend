@@ -23,5 +23,6 @@ jobs:
           script: |
             cd ~/farm-record
             git remote set-url origin "https://github.com/kapkory/farm-record-backend.git"
-            git pull
+            git fetch origin main
+            git reset --hard origin/main
             ./deploy.sh --build --migrate
