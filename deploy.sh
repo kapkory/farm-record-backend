@@ -18,7 +18,8 @@ done
 
 echo "==> Pulling latest code..."
 git remote set-url origin "https://github.com/kapkory/farm-record-backend.git"
-git pull
+git fetch origin main
+git reset --hard origin/main
 
 if $BUILD; then
   echo "==> Building Docker image..."
