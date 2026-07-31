@@ -36,13 +36,16 @@ class UsersController extends Controller
                 return $this->errorResponse('No farmer profile found for this user.', 403);
             }
 
-            $user = DB::transaction(function () use ($data, $farmerIds, $request) {
+            $temporaryPassword = Str::password(12);
+
+            $user = DB::transaction(function () use ($data, $farmerIds, $temporaryPassword) {
                 $user = User::create([
                     'uuid' => (string) Str::orderedUuid(),
                     'name' => $data['name'],
                     'email' => $data['email'],
                     'phone' => $data['phone'] ?? null,
-                    'password' => Hash::make('FarmConsul@1'),
+                    'password' => Hash::make($temporaryPassword),
+                    'must_change_password' => true,
                     'role' => 'member',
                     'status' => 1,
                 ]);
@@ -59,7 +62,7 @@ class UsersController extends Controller
 
             $token = Password::createToken($user);
             $resetUrl = config('app.frontend_url').'/auth/reset-password?token='.$token.'&email='.urlencode($user->email);
-            Mail::to($user->email)->queue(new FarmUserWelcome($user, $data['role'], $resetUrl));
+            Mail::to($user->email)->queue(new FarmUserWelcome($user, $data['role'], $resetUrl, $temporaryPassword));
 
             return $this->successResponse([
                 'uuid' => $user->uuid,
@@ -67,6 +70,7 @@ class UsersController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $data['role'],
+                'temporary_password' => $temporaryPassword,
             ], 'Farm user created successfully', 201);
 
         } catch (\Throwable $e) {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Farms\Farm;
 
+use App\Services\Animals\GestationEstimator;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -30,6 +31,12 @@ class AnimalResource extends JsonResource
             'is_standalone' => $this->is_standalone,
             'animal_type' => $this->whenLoaded('animalType', fn () => $this->animalType?->name),
             'animal_breed' => $this->whenLoaded('animalBreed', fn () => $this->animalBreed?->name),
+            // Effective gestation length so the breeding form can pre-fill the
+            // expected birth date the moment a service date is picked.
+            'gestation_days' => $this->when(
+                $this->relationLoaded('animalType') || $this->relationLoaded('animalBreed'),
+                fn () => app(GestationEstimator::class)->daysFor($this->resource)
+            ),
             'animal_group' => $this->whenLoaded('animalGroup', fn () => $this->animalGroup ? [
                 'uuid' => $this->animalGroup->uuid,
                 'name' => $this->animalGroup->name,

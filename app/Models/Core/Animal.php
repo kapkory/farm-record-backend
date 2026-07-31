@@ -20,6 +20,8 @@ class Animal extends Model
         'animal_group_id',
         'animal_type_id',
         'animal_breed_id',
+        'dam_id',
+        'sire_id',
         'treatment_plan_id',
         'tag_number',
         'name',
@@ -114,6 +116,18 @@ class Animal extends Model
     public function breed(): BelongsTo
     {
         return $this->animalBreed();
+    }
+
+    /** The animal's recorded mother, if known. */
+    public function damParent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'dam_id');
+    }
+
+    /** The animal's recorded father, if known. */
+    public function sireParent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'sire_id');
     }
 
     /**

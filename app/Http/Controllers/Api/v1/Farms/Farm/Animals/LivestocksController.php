@@ -42,9 +42,9 @@ class LivestocksController extends Controller
             $scopedFarmId = $farm->id;
         }
 
-        $trackingType  = $request->query('tracking_type');
-        $animalTypeId  = $request->query('animal_type_id');
-        $statusFilter  = $request->query('status');
+        $trackingType = $request->query('tracking_type');
+        $animalTypeId = $request->query('animal_type_id');
+        $statusFilter = $request->query('status');
 
         $combined = collect();
 
@@ -125,10 +125,10 @@ class LivestocksController extends Controller
 
         // Try individual animal first
         $animal = Animal::with([
-                'farm:id,uuid,name',
-                'animalType:id,name',
-                'animalBreed:id,name,purpose',
-            ])
+            'farm:id,uuid,name',
+            'animalType:id,name',
+            'animalBreed:id,name,purpose,gestation_days',
+        ])
             ->withMax('treatments', 'date')
             ->standalone()
             ->whereIn('farm_id', $farmIds)
@@ -144,10 +144,10 @@ class LivestocksController extends Controller
 
         // Fall back to animal group
         $group = AnimalGroup::with([
-                'farm:id,uuid,name',
-                'animalType:id,name',
-                'animalBreed:id,name,purpose',
-            ])
+            'farm:id,uuid,name',
+            'animalType:id,name',
+            'animalBreed:id,name,purpose',
+        ])
             ->withMax('treatments', 'date')
             ->whereIn('farm_id', $farmIds)
             ->where('uuid', $animal_uuid)

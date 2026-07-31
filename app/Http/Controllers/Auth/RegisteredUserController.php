@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Core\Farmer;
+use App\Models\Core\Plan;
 use App\Models\User;
+use App\Services\Billing\SubscriptionService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -13,13 +15,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 
 class RegisteredUserController extends Controller
 {
     /**
      * Handle an incoming registration request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function store(Request $request): Response
     {
@@ -27,10 +30,10 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'max:15'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', Rules\Password::defaults(),
-            'farm_name' => ['required','string','max:255'],
-             'farm_type' => ['required','in:individual,group,organization'],
-            ],
+            'password' => ['required', Rules\Password::defaults()],
+            'farm_name' => ['required', 'string', 'max:255'],
+            'farm_type' => ['required', 'in:individual,group,organization'],
+            'plan_uuid' => ['nullable', 'uuid', 'exists:plans,uuid'],
         ]);
 
         DB::beginTransaction();
@@ -50,6 +53,14 @@ class RegisteredUserController extends Controller
         ]);
 
         $user->farmers()->attach($farmer->id, ['role' => 'owner', 'status' => 1]);
+
+        // Start the chosen plan's free trial right away.
+        if ($request->filled('plan_uuid')) {
+            $plan = Plan::where('uuid', $request->string('plan_uuid'))->where('is_active', true)->first();
+            if ($plan) {
+                app(SubscriptionService::class)->subscribe($farmer, $plan);
+            }
+        }
 
         DB::commit();
         event(new Registered($user));

@@ -3,8 +3,10 @@
 namespace App\Models\Core;
 
 use App\Models\User;
+use App\Services\Animals\GestationEstimator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class AnimalBreeding extends Model
@@ -53,24 +55,33 @@ class AnimalBreeding extends Model
                 $model->uuid = (string) Str::orderedUuid();
             }
 
-            // Calculate expected birth date if service_date is provided and dam has a breed
-            if ($model->service_date && $model->dam_id && !$model->expected_birth_date) {
-                $dam = Animal::find($model->dam_id);
-                if ($dam && $dam->breed && $dam->breed->gestation_days) {
-                    $model->expected_birth_date = $model->service_date->addDays($dam->breed->gestation_days);
-                }
+            // Estimate expected birth date when the farmer didn't set one.
+            if ($model->service_date && $model->dam_id && ! $model->expected_birth_date) {
+                $model->expected_birth_date = static::estimateBirthDate($model);
             }
         });
 
         static::updating(function ($model) {
-            // Recalculate expected birth date if service_date changes
+            // Re-estimate when the service date changes and no manual date is set.
             if ($model->isDirty('service_date') && $model->service_date && $model->dam_id) {
-                $dam = Animal::find($model->dam_id);
-                if ($dam && $dam->breed && $dam->breed->gestation_days) {
-                    $model->expected_birth_date = $model->service_date->addDays($dam->breed->gestation_days);
-                }
+                $model->expected_birth_date = static::estimateBirthDate($model)
+                    ?? $model->expected_birth_date;
             }
         });
+    }
+
+    /** Estimate the birth date for a breeding from its dam's gestation. */
+    protected static function estimateBirthDate(self $model): ?Carbon
+    {
+        $dam = Animal::with(['animalBreed', 'animalType'])->find($model->dam_id);
+
+        if (! $dam) {
+            return null;
+        }
+
+        $days = app(GestationEstimator::class)->daysFor($dam);
+
+        return $days ? $model->service_date->copy()->addDays($days) : null;
     }
 
     /**
@@ -177,7 +188,7 @@ class AnimalBreeding extends Model
      */
     public function getDaysUntilBirthAttribute(): ?int
     {
-        if (!$this->expected_birth_date || $this->status !== 'pending') {
+        if (! $this->expected_birth_date || $this->status !== 'pending') {
             return null;
         }
 

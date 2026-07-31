@@ -28,6 +28,8 @@ class StoreTaskRequest extends FormRequest
             'parent_task_id' => 'nullable|integer|exists:tasks,id',
             'taskable_type' => 'nullable|string|in:planting,farm,treatment,animal_group,animal',
             'taskable_uuid' => 'nullable|uuid',
+            'record_expense' => 'sometimes|boolean',
+            'expense_amount' => 'nullable|numeric|min:0.01|required_if:record_expense,1',
         ];
     }
 }

@@ -12,6 +12,7 @@ use App\Models\Core\TreatmentPlan;
 use App\Traits\ApiResponse;
 use App\Traits\ResolvesClientUuid;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AnimalsController extends Controller
 {
@@ -51,6 +52,8 @@ class AnimalsController extends Controller
                 ? TreatmentPlan::where('uuid', $request->validated('treatment_plan_uuid'))->first()
                 : null;
 
+            [$damId, $sireId] = $this->resolveParents($request, $farm->id);
+
             $animal = Animal::create([
                 'uuid' => $uuid,
                 'farm_id' => $farm->id,
@@ -58,6 +61,8 @@ class AnimalsController extends Controller
                 'animal_group_id' => $group?->id,
                 'animal_type_id' => $group?->animal_type_id ?? $request->validated('animal_type_id'),
                 'animal_breed_id' => $request->validated('animal_breed_id') ?? $group?->animal_breed_id,
+                'dam_id' => $damId,
+                'sire_id' => $sireId,
                 'treatment_plan_id' => $treatmentPlan?->id,
                 'tag_number' => $tagNumber,
                 'name' => $name,
@@ -112,6 +117,23 @@ class AnimalsController extends Controller
             ->get();
 
         return $this->successResponse(AnimalResource::collection($animals), 'Standalone animals retrieved successfully');
+    }
+
+    /**
+     * Resolve dam/sire uuids to ids, scoped to the same farm.
+     *
+     * @return array{0: int|null, 1: int|null}
+     */
+    protected function resolveParents(Request $request, int $farmId): array
+    {
+        $damId = $request->filled('dam_uuid')
+            ? Animal::where('uuid', $request->input('dam_uuid'))->where('farm_id', $farmId)->value('id')
+            : null;
+        $sireId = $request->filled('sire_uuid')
+            ? Animal::where('uuid', $request->input('sire_uuid'))->where('farm_id', $farmId)->value('id')
+            : null;
+
+        return [$damId, $sireId];
     }
 
     public function show(string $uuid): JsonResponse

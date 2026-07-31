@@ -398,3 +398,60 @@ it('reports produced vs sold quantities per product', function () {
         ->and((float) $milk['sold'])->toBe(20.0)
         ->and((float) $milk['unsold'])->toBe(5.0);
 });
+
+it('reports sale income attributed to a specific animal', function () {
+    [$user, $farmer, $farm] = salesTestContext();
+
+    $type = AnimalType::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'name' => 'Dairy Cows',
+        'category' => 'livestock',
+        'tracking_mode' => 'both',
+    ]);
+    $animal = Animal::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'farm_id' => $farm->id,
+        'farmer_id' => $farmer->id,
+        'animal_type_id' => $type->id,
+        'name' => 'Zawadi',
+        'gender' => 'female',
+        'status' => 'active',
+        'user_id' => $user->id,
+    ]);
+
+    // Two milk sales tied to this animal, plus an unrelated farm-level sale.
+    foreach ([1200, 800] as $amount) {
+        $this->actingAs($user, 'sanctum')->postJson(SALES_BASE_URI, [
+            'farm_uuid' => $farm->uuid,
+            'date' => '2026-07-18',
+            'payment_method' => 'cash',
+            'items' => [
+                ['category' => 'animal_product', 'product' => 'milk', 'quantity' => 20, 'unit' => 'litres', 'line_total' => $amount, 'sellable_type' => 'animal', 'sellable_uuid' => $animal->uuid],
+            ],
+        ])->assertCreated();
+    }
+    $this->actingAs($user, 'sanctum')->postJson(SALES_BASE_URI, [
+        'farm_uuid' => $farm->uuid,
+        'date' => '2026-07-18',
+        'payment_method' => 'cash',
+        'items' => [
+            ['category' => 'other', 'product' => 'manure', 'quantity' => 1, 'unit_price' => 500],
+        ],
+    ])->assertCreated();
+
+    $this->actingAs($user, 'sanctum')
+        ->getJson("/api/v1/farms/farm/sales/income/animal/{$animal->uuid}")
+        ->assertOk()
+        ->assertJsonPath('data.total', 2000)
+        ->assertJsonPath('data.count', 2);
+
+    // A voided sale drops out of the attributed income.
+    $sale = Sale::whereHas('items', fn ($q) => $q->where('sellable_type', 'animal')->where('sellable_id', $animal->id))->first();
+    $this->actingAs($user, 'sanctum')->postJson(SALES_BASE_URI."/{$sale->uuid}/void")->assertOk();
+
+    $this->actingAs($user, 'sanctum')
+        ->getJson("/api/v1/farms/farm/sales/income/animal/{$animal->uuid}")
+        ->assertOk()
+        ->assertJsonPath('data.total', 800)
+        ->assertJsonPath('data.count', 1);
+});

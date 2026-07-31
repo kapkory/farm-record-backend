@@ -14,6 +14,7 @@ use App\Models\Core\Hive;
 use App\Models\Core\Planting;
 use App\Models\Core\Task;
 use App\Models\Core\Treatment;
+use App\Services\Task\TaskExpenseRecorder;
 use App\Traits\ApiResponse;
 use App\Traits\ResolvesClientUuid;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,10 @@ use Illuminate\Http\Request;
 class TasksController extends Controller
 {
     use ApiResponse, ResolvesClientUuid;
+
+    public function __construct(protected TaskExpenseRecorder $taskExpenseRecorder)
+    {
+    }
 
     // ─── Resolve taskable model from short type + uuid ────────────────────────
     protected function resolveTaskable(string $type, string $uuid): ?object
@@ -199,6 +204,8 @@ class TasksController extends Controller
                 'taskable_type' => $taskableType,
                 'taskable_id' => $taskableId,
             ]);
+
+            $this->taskExpenseRecorder->recordForTask($request->user(), $task->fresh(), $validated);
 
             return $this->successResponse(
                 new TaskResource($task->load(['creator', 'assignee', 'subTasks'])),

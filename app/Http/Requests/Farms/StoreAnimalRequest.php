@@ -25,6 +25,8 @@ class StoreAnimalRequest extends FormRequest
             'farm_uuid' => ['nullable', 'uuid', 'exists:farms,uuid'],
             'animal_type_id' => ['nullable', 'integer', 'exists:animal_types,id'],
             'animal_breed_id' => ['nullable', 'integer', 'exists:animal_breeds,id'],
+            'dam_uuid' => ['nullable', 'uuid', 'exists:animals,uuid'],
+            'sire_uuid' => ['nullable', 'uuid', 'exists:animals,uuid'],
             'treatment_plan_uuid' => ['nullable', 'uuid', 'exists:treatment_plans,uuid'],
             'tag_number' => ['nullable', 'string', 'max:100'],
             'name' => ['nullable', 'string', 'max:255'],

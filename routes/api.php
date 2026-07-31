@@ -5,8 +5,11 @@ use Illuminate\Support\Facades\Route;
 
 // Include auth routes (login, register, etc.)
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-   return $request->user()->only(['uuid', 'name', 'email']);
+   return $request->user()->only(['uuid', 'name', 'email', 'is_superadmin', 'must_change_password']);
 });
+
+// Public plan catalogue — the register page shows plans before any login.
+Route::get('/v1/public/plans', [\App\Http\Controllers\Api\v1\Billing\SubscriptionController::class, 'plans']);
 
 Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('farms', \App\Http\Controllers\Api\v1\Farms\FarmsController::class);

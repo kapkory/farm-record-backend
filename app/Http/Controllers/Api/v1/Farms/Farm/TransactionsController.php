@@ -50,7 +50,7 @@ class TransactionsController extends Controller
 
         if ($existing) {
             return $this->successResponse(
-                $existing->load('entries.account', 'transactionable'),
+                LedgerTransactionResource::make($existing->load('entries.account', 'transactionable')),
                 'Transaction already posted'
             );
         }
@@ -65,7 +65,7 @@ class TransactionsController extends Controller
         } catch (\Throwable $e) {
             if ($replayed = $this->findAfterUniqueViolation($e, LedgerTransaction::class, $uuid)) {
                 return $this->successResponse(
-                    $replayed->load('entries.account', 'transactionable'),
+                    LedgerTransactionResource::make($replayed->load('entries.account', 'transactionable')),
                     'Transaction already posted'
                 );
             }
@@ -73,7 +73,11 @@ class TransactionsController extends Controller
             throw $e;
         }
 
-        return $this->successResponse($transaction, 'Transaction posted successfully', 201);
+        return $this->successResponse(
+            LedgerTransactionResource::make($transaction),
+            'Transaction posted successfully',
+            201
+        );
     }
 
     public function listTransactions(string $transactionable_type, $transactionable_uuid): JsonResponse

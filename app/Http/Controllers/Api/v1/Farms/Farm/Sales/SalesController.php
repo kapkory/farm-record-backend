@@ -7,7 +7,11 @@ use App\Http\Requests\Farms\StoreSalePaymentRequest;
 use App\Http\Requests\Farms\StoreSaleRequest;
 use App\Http\Resources\Farms\Farm\SalePaymentResource;
 use App\Http\Resources\Farms\Farm\SaleResource;
+use App\Models\Core\Animal;
+use App\Models\Core\AnimalGroup;
 use App\Models\Core\Farm;
+use App\Models\Core\Hive;
+use App\Models\Core\Planting;
 use App\Models\Core\Sale;
 use App\Models\Core\SaleItem;
 use App\Models\Core\SalePayment;
@@ -198,5 +202,44 @@ class SalesController extends Controller
         $farmerIds = $request->user()->farmers()->pluck('farmers.id');
 
         return Sale::query()->whereIn('farmer_id', $farmerIds);
+    }
+
+    // GET /income/{sellable_type}/{sellable_uuid} — total sale income
+    // attributed to one animal/group/planting/hive, so its profitability
+    // panel can count sales made through the Record Sale flow.
+    public function sellableIncome(Request $request, string $sellableType, string $sellableUuid): JsonResponse
+    {
+        $farmerIds = $request->user()->farmers()->pluck('farmers.id');
+
+        $modelClass = match ($sellableType) {
+            'animal' => Animal::class,
+            'animal_group' => AnimalGroup::class,
+            'planting' => Planting::class,
+            'hive' => Hive::class,
+            default => null,
+        };
+
+        if (! $modelClass) {
+            return $this->errorResponse('Unsupported sale target.', 422);
+        }
+
+        $sellableId = $modelClass::where('uuid', $sellableUuid)->value('id');
+
+        if (! $sellableId) {
+            return $this->successResponse(
+                ['total' => 0.0, 'count' => 0],
+                'Sale income retrieved successfully'
+            );
+        }
+
+        $query = SaleItem::query()
+            ->where('sellable_type', $sellableType)
+            ->where('sellable_id', $sellableId)
+            ->whereHas('sale', fn ($q) => $q->whereIn('farmer_id', $farmerIds)->where('status', '!=', Sale::STATUS_VOID));
+
+        return $this->successResponse([
+            'total' => (float) (clone $query)->sum('line_total'),
+            'count' => (clone $query)->distinct('sale_id')->count('sale_id'),
+        ], 'Sale income retrieved successfully');
     }
 }

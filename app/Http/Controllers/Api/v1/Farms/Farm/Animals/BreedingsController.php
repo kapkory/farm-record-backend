@@ -9,9 +9,11 @@ use App\Http\Resources\Farms\Farm\AnimalBreedingResource;
 use App\Models\Core\Animal;
 use App\Models\Core\AnimalBreeding;
 use App\Models\Core\Farm;
+use App\Services\Animals\InbreedingChecker;
 use App\Traits\ApiResponse;
 use App\Traits\ResolvesClientUuid;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class BreedingsController extends Controller
 {
@@ -166,5 +168,48 @@ class BreedingsController extends Controller
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to retrieve breedings', 500, ['exception' => $e->getMessage()]);
         }
+    }
+
+    // GET /calendar?window=30 — pending breedings with an expected birth date,
+    // ordered by how soon they are due, for the dashboard and calendar.
+    public function calendar(Request $request): JsonResponse
+    {
+        $farmIds = Farm::farmerOwned(auth()->id())->pluck('id');
+        $window = (int) $request->query('window', 45);
+
+        $breedings = AnimalBreeding::with(['dam.animalType', 'dam.animalBreed', 'sire'])
+            ->whereIn('farm_id', $farmIds)
+            ->where('status', 'pending')
+            ->whereNotNull('expected_birth_date')
+            ->where('expected_birth_date', '<=', now()->addDays($window))
+            ->orderBy('expected_birth_date')
+            ->get();
+
+        return $this->successResponse(
+            AnimalBreedingResource::collection($breedings),
+            'Breeding calendar retrieved successfully'
+        );
+    }
+
+    // GET /inbreeding-check?dam_uuid=&sire_uuid= — non-blocking relationship
+    // risk check run before a mating is recorded.
+    public function inbreedingCheck(Request $request, InbreedingChecker $checker): JsonResponse
+    {
+        $damUuid = $request->query('dam_uuid');
+        $sireUuid = $request->query('sire_uuid');
+
+        if (! $damUuid || ! $sireUuid) {
+            return $this->successResponse(['related' => false, 'warnings' => []], 'No pair to check');
+        }
+
+        $farmIds = Farm::farmerOwned(auth()->id())->pluck('id');
+        $dam = Animal::whereIn('farm_id', $farmIds)->where('uuid', $damUuid)->first();
+        $sire = Animal::whereIn('farm_id', $farmIds)->where('uuid', $sireUuid)->first();
+
+        if (! $dam || ! $sire) {
+            return $this->successResponse(['related' => false, 'warnings' => []], 'Animal not found');
+        }
+
+        return $this->successResponse($checker->check($dam, $sire), 'Inbreeding check complete');
     }
 }
