@@ -17,6 +17,7 @@ for arg in "$@"; do
 done
 
 echo "==> Pulling latest code..."
+git remote set-url origin "https://github.com/kapkory/farm-record-backend.git"
 git pull
 
 if $BUILD; then
