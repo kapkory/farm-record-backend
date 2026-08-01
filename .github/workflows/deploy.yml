@@ -22,11 +22,5 @@ jobs:
           command_timeout: 60m   # docker builds can be slow
           script: |
             set -e
-            APP_DIR="$HOME/farm-record/farm-app-backend"
-
-            cd "$APP_DIR"
-            git remote set-url origin "https://github.com/kapkory/farm-record-backend.git"
-            git fetch origin main
-            git reset --hard origin/main
-
+            APP_DIR="$HOME/farm-record"
             ./deploy.sh --build --migrate
