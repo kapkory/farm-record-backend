@@ -20,6 +20,7 @@ class HarvestsController extends Controller
 
     public function __construct(protected HiveHarvestService $harvestService) {}
 
+
     public function store(StoreHarvestRequest $request): JsonResponse
     {
         try {
