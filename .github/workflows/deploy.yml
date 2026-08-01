@@ -21,8 +21,12 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           command_timeout: 60m   # docker builds can be slow
           script: |
-            cd ~/farm-record/farm-app-backend
-            git -C farm-app-backend remote set-url origin "https://github.com/kapkory/farm-record-backend.git"
-            git -C farm-app-backend fetch origin main
-            git -C farm-app-backend reset --hard origin/main
-            ./deploy.sh --build --migrate --seed
+            set -e
+            APP_DIR="$HOME/farm-record/farm-app-backend"
+
+            cd "$APP_DIR"
+            git remote set-url origin "https://github.com/kapkory/farm-record-backend.git"
+            git fetch origin main
+            git reset --hard origin/main
+
+            ./deploy.sh --build --migrate
