@@ -23,4 +23,5 @@ jobs:
           script: |
             set -e
             APP_DIR="$HOME/farm-record"
+            cd "$APP_DIR"
             ./deploy.sh --build --migrate
