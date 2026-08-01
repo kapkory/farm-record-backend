@@ -21,11 +21,8 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           command_timeout: 60m   # docker builds can be slow
           script: |
-            cd ~/farm-record
-            # Deterministically update the nested backend repo only — NOT the umbrella
-            # checkout, which owns docker-compose.yml / deploy.sh. Resetting the umbrella
-            # to the backend repo deletes the compose files and breaks the build.
+            cd ~/farm-record/farm-app-backend
             git -C farm-app-backend remote set-url origin "https://github.com/kapkory/farm-record-backend.git"
             git -C farm-app-backend fetch origin main
             git -C farm-app-backend reset --hard origin/main
-            ./deploy.sh --build --migrate
+            ./deploy.sh --build --migrate --seed
