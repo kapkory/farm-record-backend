@@ -14,8 +14,6 @@ use App\User;
 
 class ConfigsRepository
 {
-
-
     public static function getUserStatus($state){
         $statuses = [
             'inactive'=>0,
