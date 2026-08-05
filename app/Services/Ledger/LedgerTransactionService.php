@@ -43,6 +43,7 @@ class LedgerTransactionService
                 'reference_number' => $dto->referenceNumber,
                 'transactionable_type' => $transactionable::class,
                 'transactionable_id' => $transactionable->getKey(),
+                'scope' => $dto->scope,
                 'farmer_id' => $dto->farmerId,
             ]);
 
@@ -180,7 +181,13 @@ class LedgerTransactionService
             ]);
         }
 
-        if ((int) $transactionable->farm_id !== $farmId) {
+        // A Farm target is its own farm — it has no farm_id to compare, so
+        // check its key instead.
+        $targetFarmId = $transactionable instanceof \App\Models\Core\Farm
+            ? (int) $transactionable->getKey()
+            : (int) ($transactionable->farm_id ?? 0);
+
+        if ($targetFarmId !== $farmId) {
             throw ValidationException::withMessages([
                 'transaction_uuid' => ['The selected transaction target does not belong to the resolved farm.'],
             ]);

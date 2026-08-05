@@ -52,8 +52,9 @@ class LivestocksController extends Controller
         if ($trackingType !== 'group') {
             $animalQuery = Animal::with([
                 'farm:id,uuid,name',
-                'animalType:id,name',
+                'animalType:id,name,category,weighing_interval_days',
                 'animalBreed:id,name,purpose',
+                'latestWeight',
             ])
                 ->withMax('treatments', 'date')
                 ->standalone()
@@ -76,8 +77,9 @@ class LivestocksController extends Controller
         if ($trackingType !== 'individual') {
             $groupQuery = AnimalGroup::with([
                 'farm:id,uuid,name',
-                'animalType:id,name',
+                'animalType:id,name,category,weighing_interval_days',
                 'animalBreed:id,name,purpose',
+                'latestWeight',
             ])
                 ->withMax('treatments', 'date')
                 ->whereIn('farm_id', $farmIds);
@@ -123,14 +125,20 @@ class LivestocksController extends Controller
             return $this->errorResponse('No farmer profile found for this user.', 403);
         }
 
-        // Try individual animal first
+        // Try individual animal first.
+        //
+        // No ->standalone() filter here, unlike index(): the list leaves out
+        // grouped animals so a herd isn't counted twice, but an individual that
+        // belongs to a group still has its own record and must be openable and
+        // editable. animalGroup is loaded so the edit form can pre-select it.
         $animal = Animal::with([
             'farm:id,uuid,name',
-            'animalType:id,name',
+            'animalGroup:id,uuid,name',
+            'animalType:id,name,category,weighing_interval_days',
             'animalBreed:id,name,purpose,gestation_days',
+            'latestWeight',
         ])
             ->withMax('treatments', 'date')
-            ->standalone()
             ->whereIn('farm_id', $farmIds)
             ->where('uuid', $animal_uuid)
             ->first();
@@ -145,8 +153,9 @@ class LivestocksController extends Controller
         // Fall back to animal group
         $group = AnimalGroup::with([
             'farm:id,uuid,name',
-            'animalType:id,name',
+            'animalType:id,name,category,weighing_interval_days',
             'animalBreed:id,name,purpose',
+            'latestWeight',
         ])
             ->withMax('treatments', 'date')
             ->whereIn('farm_id', $farmIds)

@@ -30,6 +30,10 @@ class StoreTaskRequest extends FormRequest
             'taskable_uuid' => 'nullable|uuid',
             'record_expense' => 'sometimes|boolean',
             'expense_amount' => 'nullable|numeric|min:0.01|required_if:record_expense,1',
+            // Optionally draw the task's materials from bulk stock (livestock
+            // tasks only — the input is applied to the animal/group taskable).
+            'input_uuid' => 'nullable|uuid|exists:farm_inputs,uuid',
+            'input_quantity_used' => 'nullable|numeric|gt:0|required_with:input_uuid',
         ];
     }
 }

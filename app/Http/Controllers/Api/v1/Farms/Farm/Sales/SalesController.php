@@ -158,6 +158,20 @@ class SalesController extends Controller
     {
         $base = $this->ownedSales($request)->where('status', '!=', Sale::STATUS_VOID);
 
+        // Optional farm scope so a single farm page can show only its income.
+        if ($request->filled('farm_uuid')) {
+            $farm = Farm::query()
+                ->farmerOwned($request->user()->id)
+                ->where('uuid', $request->input('farm_uuid'))
+                ->first();
+
+            if (! $farm) {
+                return $this->errorResponse('Farm not found or access denied.', 404);
+            }
+
+            $base->where('farm_id', $farm->id);
+        }
+
         if ($request->filled('from')) {
             $base->whereDate('date', '>=', $request->input('from'));
         }

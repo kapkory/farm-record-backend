@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1\Farms\Farm\Animals;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Farms\StoreAnimalGroupRequest;
 use App\Http\Resources\Farms\Farm\AnimalGroupResource;
+use App\Http\Resources\Farms\Farm\LivestockResource;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\Farm;
 use App\Models\Core\Field;
@@ -47,7 +48,11 @@ class AnimalGroupsController extends Controller
                 'status' => $request->validated('status') ?? 1,
             ])->load(['animalType', 'animalBreed', 'field', 'animals', 'events']);
 
-            return $this->successResponse(new AnimalGroupResource($group), 'Animal group created successfully', 201);
+            return $this->successResponse(
+                new LivestockResource($group->load(['farm', 'animalType', 'animalBreed', 'latestWeight'])),
+                'Animal group created successfully',
+                201
+            );
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to create animal group', 500, ['exception' => $e->getMessage()]);
         }
@@ -116,7 +121,10 @@ class AnimalGroupsController extends Controller
                 'status' => $request->validated('status') ?? $group->status,
             ]);
 
-            return $this->successResponse(new AnimalGroupResource($group->load(['animalType', 'animalBreed', 'field', 'animals', 'events'])), 'Animal group updated successfully');
+            return $this->successResponse(
+                new LivestockResource($group->load(['farm', 'animalType', 'animalBreed', 'latestWeight'])),
+                'Animal group updated successfully'
+            );
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to update animal group', 500, ['exception' => $e->getMessage()]);
         }

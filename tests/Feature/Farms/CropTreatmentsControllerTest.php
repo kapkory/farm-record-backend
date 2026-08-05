@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Core\AnimalGroup;
 use App\Models\Core\Crop;
 use App\Models\Core\Farm;
 use App\Models\Core\Farmer;
@@ -114,6 +115,107 @@ it('stores a treatment and records its cost in the ledger when record_expense is
     $this->assertDatabaseCount('ledger_transactions', 1);
     $this->assertDatabaseHas('ledger_entries', [
         'amount' => '34000.00',
+    ]);
+});
+
+it('records a livestock treatment cost against the Veterinary & Medicine account', function () {
+    $user = User::factory()->create();
+
+    $farmer = Farmer::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'display_name' => 'Livestock Farmer',
+        'type' => 'individual',
+        'status' => 1,
+    ]);
+
+    FarmerUser::create([
+        'farmer_id' => $farmer->id,
+        'user_id' => $user->id,
+        'role' => 'owner',
+        'status' => 1,
+    ]);
+
+    $farm = Farm::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'farmer_id' => $farmer->id,
+        'name' => 'Livestock Farm',
+        'location' => 'Eldoret',
+        'type' => 'animal',
+        'ownership_type' => 'owned',
+        'status' => 1,
+    ]);
+
+    $animalType = App\Models\Core\AnimalType::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'name' => 'Layers',
+        'category' => 'livestock',
+        'tracking_mode' => 'both',
+    ]);
+
+    $group = AnimalGroup::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'farm_id' => $farm->id,
+        'farmer_id' => $farmer->id,
+        'animal_type_id' => $animalType->id,
+        'name' => 'Layers Batch 1',
+        'initial_count' => 200,
+        'current_count' => 200,
+        'acquired_date' => '2026-01-01',
+        'purpose' => 'commercial',
+        'user_id' => $user->id,
+        'status' => 1,
+    ]);
+
+    $treatmentType = TreatmentType::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'name' => 'Newcastle Vaccine',
+        'description' => 'Livestock vaccine',
+        'type' => 'livestock',
+        'status' => 1,
+    ]);
+
+    // The seeded chart of accounts uses these exact names; the recorder must
+    // match them or a livestock treatment expense finds no account and 422s.
+    LedgerAccount::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'name' => 'Veterinary & Medicine',
+        'slug' => 'veterinary-medicine',
+        'type' => 'expense',
+        'farmer_id' => $farmer->id,
+        'is_system' => true,
+        'status' => 1,
+    ]);
+
+    LedgerAccount::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'name' => 'Cash',
+        'slug' => 'cash',
+        'type' => 'asset',
+        'farmer_id' => $farmer->id,
+        'is_system' => true,
+        'status' => 1,
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')->postJson(CROP_TREATMENTS_BASE_URI, [
+        'date' => '2026-03-22',
+        'details' => 'Newcastle vaccination',
+        'expense_amount' => 5000,
+        'farm_id' => $farm->uuid,
+        'model' => 'animal_group',
+        'animal_group_uuid' => $group->uuid,
+        'record_expense' => true,
+        'treatment_type_id' => $treatmentType->id,
+    ]);
+
+    $response->assertCreated();
+
+    $this->assertDatabaseCount('ledger_transactions', 1);
+    $this->assertDatabaseHas('ledger_transactions', [
+        'transactionable_type' => AnimalGroup::class,
+        'transactionable_id' => $group->id,
+    ]);
+    $this->assertDatabaseHas('ledger_entries', [
+        'amount' => '5000.00',
     ]);
 });
 

@@ -40,17 +40,20 @@ class TaskExpenseRecorder
 
         [$farm, $transactionFor, $transactionUuid] = $this->resolveFarmContext($taskable);
 
+        // Names must match the seeded chart of accounts (LedgerAccountsSeeder)
+        // exactly — 'Labor'/'Veterinary' never existed, so the task expense
+        // only ever resolved to 'Fertilizer & Chemicals' by luck.
         $expenseAccount = LedgerAccount::query()
             ->where('type', 'expense')
-            ->whereIn('name', ['Labor', 'Fertilizer & Chemicals', 'Veterinary'])
+            ->whereIn('name', ['Labour', 'Fertilizer & Chemicals', 'Veterinary & Medicine'])
             ->where(function ($query) use ($farm) {
                 $query->whereNull('farmer_id')
                     ->orWhere('farmer_id', $farm->farmer_id);
             })
             ->orderByRaw("CASE name
-                WHEN 'Labor' THEN 1
+                WHEN 'Labour' THEN 1
                 WHEN 'Fertilizer & Chemicals' THEN 2
-                WHEN 'Veterinary' THEN 3
+                WHEN 'Veterinary & Medicine' THEN 3
                 ELSE 99 END")
             ->orderByDesc('farmer_id')
             ->first();

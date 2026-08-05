@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AnimalGroup extends Model
@@ -30,6 +31,7 @@ class AnimalGroup extends Model
         'description',
         'user_id',
         'status',
+        'weighing_interval_days',
     ];
 
     protected $casts = [
@@ -102,5 +104,23 @@ class AnimalGroup extends Model
     public function events(): MorphMany
     {
         return $this->morphMany(AnimalEvent::class, 'eventable');
+    }
+
+    /** Shares of bulk-purchased inputs (dip, feed, drugs) charged to this record. */
+    public function inputAllocations(): MorphMany
+    {
+        return $this->morphMany(InputApplicationTarget::class, 'targetable');
+    }
+
+    /** Live weight readings — for a group these are sample averages per head. */
+    public function weights(): MorphMany
+    {
+        return $this->morphMany(AnimalWeight::class, 'weighable');
+    }
+
+    /** The most recent reading, for list views and the group header. */
+    public function latestWeight(): MorphOne
+    {
+        return $this->morphOne(AnimalWeight::class, 'weighable')->latestOfMany('measured_on');
     }
 }

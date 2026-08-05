@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\v1\Farms\Farm\Crops;
 use App\Http\Controllers\Controller;
 use App\Models\Core\Animal;
 use App\Models\Core\AnimalGroup;
+use App\Models\Core\FarmInput;
 use App\Models\Core\Planting;
 use App\Models\Core\Treatment;
+use App\Services\Inputs\InputApplicationService;
 use App\Services\Treatment\TreatmentExpenseRecorder;
 use App\Traits\ApiResponse;
 use App\Traits\ResolvesClientUuid;
@@ -15,13 +17,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class TreatmentsController extends Controller
 {
     use ApiResponse, ResolvesClientUuid;
 
-    public function __construct(protected TreatmentExpenseRecorder $treatmentExpenseRecorder) {}
+    public function __construct(
+        protected TreatmentExpenseRecorder $treatmentExpenseRecorder,
+        protected InputApplicationService $inputApplicationService,
+    ) {}
 
     public function listPlantingTreatments($plantingUuid): JsonResponse
     {
@@ -79,6 +86,11 @@ class TreatmentsController extends Controller
             'retreat_date' => 'nullable|date',
             'record_expense' => 'nullable|boolean',
             'expense_amount' => 'nullable|numeric|min:0.01|required_if:record_expense,true,1',
+            // Optionally draw the treatment from bulk stock: records a stock
+            // usage tied to this treatment, which handles the cost. Livestock
+            // only — input applications target animals/groups, not plantings.
+            'input_uuid' => 'nullable|uuid|exists:farm_inputs,uuid',
+            'input_quantity_used' => 'nullable|numeric|gt:0|required_with:input_uuid',
         ]);
 
         [$uuid, $existing, $foreign] = $this->resolveClientUuid(
@@ -109,7 +121,25 @@ class TreatmentsController extends Controller
 
             $treatmentable = $this->resolveTreatmentable($model, $targetUuid);
 
-            $treatment = DB::transaction(function () use ($request, $data, $treatmentable, $model, $uuid) {
+            $usingInput = ! empty($data['input_uuid']);
+
+            if ($usingInput && $model === 'planting') {
+                return $this->errorResponse('Validation failed', 422, [
+                    'input_uuid' => ['Using bulk stock is only available for livestock treatments.'],
+                ]);
+            }
+
+            $input = null;
+            if ($usingInput) {
+                $input = FarmInput::where('uuid', $data['input_uuid'])->first();
+                if (! $input || (int) $input->farm_id !== (int) $treatmentable->farm_id) {
+                    return $this->errorResponse('Validation failed', 422, [
+                        'input_uuid' => ['The selected input is not on this farm.'],
+                    ]);
+                }
+            }
+
+            $treatment = DB::transaction(function () use ($request, $data, $treatmentable, $model, $uuid, $usingInput, $input, $targetUuid) {
                 $treatment = Treatment::create([
                     'uuid' => $uuid,
                     'treatment_type_id' => $data['treatment_type_id'],
@@ -123,7 +153,24 @@ class TreatmentsController extends Controller
                     'user_id' => $request->user()->id,
                 ]);
 
-                if (($data['record_expense'] ?? false) === true) {
+                // Drawing from stock carries the cost via the input allocation,
+                // so the manual expense is skipped to avoid double-counting.
+                if ($usingInput && $input) {
+                    $this->inputApplicationService->apply(
+                        $input,
+                        [
+                            'date' => $data['date'],
+                            'quantity_used' => (float) $data['input_quantity_used'],
+                            'allocation_basis' => 'per_head',
+                            'details' => $data['details'],
+                            'notes' => $data['notes'] ?? null,
+                            'targets' => [['type' => $model, 'uuid' => $targetUuid]],
+                        ],
+                        $request->user(),
+                        (string) Str::orderedUuid(),
+                        createTreatment: false,
+                    );
+                } elseif (($data['record_expense'] ?? false) === true) {
                     if ($model === 'animal_group' && $treatmentable instanceof AnimalGroup) {
                         $this->treatmentExpenseRecorder->recordForAnimalGroup($request->user(), $treatmentable->load('farm'), $data);
                     }
@@ -141,6 +188,8 @@ class TreatmentsController extends Controller
             });
 
             return $this->successResponse($treatment, 'Treatment saved successfully', 201);
+        } catch (ValidationException $e) {
+            return $this->errorResponse('Validation failed', 422, $e->errors());
         } catch (\Throwable $e) {
             if ($replayed = $this->findAfterUniqueViolation($e, Treatment::class, $uuid)) {
                 return $this->successResponse($replayed, 'Treatment already saved');

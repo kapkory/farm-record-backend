@@ -20,7 +20,10 @@ readonly class LedgerTransactionDTO
         public string $transactionUuid,
         public ?int $quantity,
         public ?float $unitCost,
-        public ?string $uuid = null
+        public ?string $uuid = null,
+        // Which part of the farm a whole-farm expense belongs to
+        // (general|livestock|crops). Null for record-level transactions.
+        public ?string $scope = null,
     ) {}
 
     public static function fromRequest(array $validated, int $farmerId, int $farmId): self
@@ -42,6 +45,7 @@ readonly class LedgerTransactionDTO
             quantity: isset($entry['quantity']) ? (int) $entry['quantity'] : null,
             unitCost: isset($entry['unit_cost']) ? (float) $entry['unit_cost'] : null,
             uuid: $validated['uuid'] ?? null,
+            scope: $validated['scope'] ?? null,
         );
     }
 }

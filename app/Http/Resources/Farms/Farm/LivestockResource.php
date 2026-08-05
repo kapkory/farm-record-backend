@@ -4,6 +4,7 @@ namespace App\Http\Resources\Farms\Farm;
 
 use App\Models\Core\AnimalGroup;
 use App\Services\Animals\GestationEstimator;
+use App\Services\Animals\WeighingIntervalResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -36,6 +37,11 @@ class LivestockResource extends JsonResource
                 'name' => $this->animalBreed->name,
             ] : null),
             'tracking_type' => 'individual',
+            // The edit form needs the current group to pre-select it.
+            'animal_group' => $this->whenLoaded('animalGroup', fn () => $this->animalGroup ? [
+                'uuid' => $this->animalGroup->uuid,
+                'name' => $this->animalGroup->name,
+            ] : null),
             'tag_number' => $this->tag_number,
             'name' => $this->name,
             'group_name' => null,
@@ -47,9 +53,18 @@ class LivestockResource extends JsonResource
             'date_of_birth' => $this->date_of_birth?->toDateString(),
             'acquisition_date' => $this->acquisition_date?->toDateString(),
             'acquisition_type' => $this->acquisition_type,
+            'purchase_price' => $this->purchase_price !== null ? (float) $this->purchase_price : null,
             'purpose' => $this->whenLoaded('animalBreed', fn () => $this->animalBreed?->purpose),
             'status' => $this->status,
             'notes' => $this->notes,
+            // Latest live weight (per head; for a group it is a sample average).
+            'latest_weight_kg' => $this->whenLoaded('latestWeight', fn () => $this->latestWeight?->weight_kg !== null
+                ? (float) $this->latestWeight->weight_kg
+                : null),
+            'latest_weighed_on' => $this->whenLoaded('latestWeight', fn () => $this->latestWeight?->measured_on?->toDateString()),
+            // How often this stock should be weighed, so the Weights tab can
+            // show when the next reading is due without another request.
+            'weighing_interval_days' => app(WeighingIntervalResolver::class)->daysFor($this->resource),
             'last_checkup' => $this->treatments_max_date,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
@@ -85,6 +100,14 @@ class LivestockResource extends JsonResource
             'purpose' => $this->whenLoaded('animalBreed', fn () => $this->animalBreed?->purpose),
             'status' => $this->groupStatus(),
             'notes' => $this->description,
+            // Latest live weight (per head; for a group it is a sample average).
+            'latest_weight_kg' => $this->whenLoaded('latestWeight', fn () => $this->latestWeight?->weight_kg !== null
+                ? (float) $this->latestWeight->weight_kg
+                : null),
+            'latest_weighed_on' => $this->whenLoaded('latestWeight', fn () => $this->latestWeight?->measured_on?->toDateString()),
+            // How often this stock should be weighed, so the Weights tab can
+            // show when the next reading is due without another request.
+            'weighing_interval_days' => app(WeighingIntervalResolver::class)->daysFor($this->resource),
             'last_checkup' => $this->treatments_max_date,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

@@ -4,4 +4,5 @@ Route::get("calendar", [$controller,"calendar"]);
 Route::get("inbreeding-check", [$controller,"inbreedingCheck"]);
 Route::get("list/{uuid}", [$controller,"listBreedings"]);
 Route::post("/", [$controller,"store"]);
+Route::post("{uuid}/birth", [$controller,"registerBirth"]);
 Route::put("{uuid}", [$controller,"update"]);

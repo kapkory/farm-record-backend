@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Api\v1\Farms\Farm\Animals;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Farms\RegisterBirthRequest;
 use App\Http\Requests\Farms\StoreBreedingRequest;
 use App\Http\Requests\Farms\UpdateBreedingRequest;
 use App\Http\Resources\Farms\Farm\AnimalBreedingResource;
 use App\Models\Core\Animal;
 use App\Models\Core\AnimalBreeding;
+use App\Models\Core\AnimalEvent;
 use App\Models\Core\Farm;
+use App\Services\Animals\BirthRegistrar;
 use App\Services\Animals\InbreedingChecker;
 use App\Traits\ApiResponse;
 use App\Traits\ResolvesClientUuid;
@@ -139,6 +142,65 @@ class BreedingsController extends Controller
         }
     }
 
+    // POST /{uuid}/birth — record the outcome of a pregnancy: create an Animal
+    // for each live offspring, log a birth event on the dam, and close the
+    // breeding. Replays of the same request uuid return the stored result, so
+    // the offline queue can retry safely.
+    public function registerBirth(RegisterBirthRequest $request, string $uuid, BirthRegistrar $registrar): JsonResponse
+    {
+        $breeding = AnimalBreeding::where('uuid', $uuid)->first();
+
+        if (! $breeding || ! Farm::farmerOwned($request->user()->id)->where('id', $breeding->farm_id)->exists()) {
+            return $this->errorResponse('Breeding record not found', 404);
+        }
+
+        [$eventUuid, $existing, $foreign] = $this->resolveClientUuid(
+            $request,
+            AnimalEvent::class,
+            fn (AnimalEvent $event) => $event->user_id === $request->user()->id
+        );
+
+        if ($foreign) {
+            return $this->clientUuidTakenResponse();
+        }
+
+        if ($existing) {
+            return $this->successResponse(
+                new AnimalBreedingResource($this->loadedBreeding($breeding)),
+                'Birth already recorded'
+            );
+        }
+
+        try {
+            $registrar->register($breeding, $request->validated(), $request->user(), $eventUuid);
+
+            return $this->successResponse(
+                new AnimalBreedingResource($this->loadedBreeding($breeding->fresh())),
+                'Birth recorded successfully',
+                201
+            );
+        } catch (\Throwable $e) {
+            if ($this->findAfterUniqueViolation($e, AnimalEvent::class, $eventUuid)) {
+                return $this->successResponse(
+                    new AnimalBreedingResource($this->loadedBreeding($breeding->fresh())),
+                    'Birth already recorded'
+                );
+            }
+
+            return $this->errorResponse('Failed to record the birth', 500, ['exception' => $e->getMessage()]);
+        }
+    }
+
+    /** The relation set every breeding payload is rendered with. */
+    protected function loadedBreeding(AnimalBreeding $breeding): AnimalBreeding
+    {
+        return $breeding->load([
+            'dam.animalType', 'dam.animalBreed',
+            'sire.animalType', 'sire.animalBreed',
+            'offspring',
+        ]);
+    }
+
     public function listBreedings(string $uuid): JsonResponse
     {
         try {
@@ -153,6 +215,7 @@ class BreedingsController extends Controller
                 'dam.animalBreed',
                 'sire.animalType',
                 'sire.animalBreed',
+                'offspring',
             ])
                 ->where(function ($query) use ($animal) {
                     $query->where('dam_id', $animal->id)
@@ -177,7 +240,7 @@ class BreedingsController extends Controller
         $farmIds = Farm::farmerOwned(auth()->id())->pluck('id');
         $window = (int) $request->query('window', 45);
 
-        $breedings = AnimalBreeding::with(['dam.animalType', 'dam.animalBreed', 'sire'])
+        $breedings = AnimalBreeding::with(['dam.animalType', 'dam.animalBreed', 'sire', 'offspring'])
             ->whereIn('farm_id', $farmIds)
             ->where('status', 'pending')
             ->whereNotNull('expected_birth_date')

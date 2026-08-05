@@ -100,15 +100,30 @@ class TransactionsController extends Controller
             ->latest('id')
             ->get();
 
-        return $this->successResponse(
-            LedgerTransactionResource::collection($transactions),
-            'Transactions retrieved successfully'
-        );
+        $direct = LedgerTransactionResource::collection($transactions)
+            ->toArray(request());
+
+        // Costs that were never posted against this animal directly: its share
+        // of a bulk input the whole farm draws on — a tin of dip, a bag of feed.
+        // The ledger holds one posting against the input; these rows say who
+        // benefited. Merged in here so the Costs view shows the true cost of
+        // keeping this animal rather than only what was billed straight to it.
+        $shared = $this->sharedInputCosts($transactionable);
+
+        $rows = collect($direct)
+            ->map(fn (array $row) => $row + ['source' => 'direct'])
+            ->concat($shared)
+            ->sortByDesc(fn (array $row) => [$row['date'] ?? '', $row['id'] ?? 0])
+            ->values();
+
+        return $this->successResponse($rows, 'Transactions retrieved successfully');
     }
 
     protected function resolveFarmId(string $transactionFor, string $transactionUuid): int
     {
         return match ($transactionFor) {
+            'farm' => \App\Models\Core\Farm::query()->where('uuid', $transactionUuid)->value('id')
+                ?? throw new ModelNotFoundException,
             'planting' => Planting::query()->where('uuid', $transactionUuid)->value('farm_id'),
             'animal_group' => AnimalGroup::query()->where('uuid', $transactionUuid)->value('farm_id'),
             'animal' => Animal::query()->where('uuid', $transactionUuid)->value('farm_id')
@@ -123,6 +138,7 @@ class TransactionsController extends Controller
     protected function resolveTransactionableType(string $type): string
     {
         return match ($type) {
+            'farm' => \App\Models\Core\Farm::class,
             'planting' => Planting::class,
             'animal_group' => AnimalGroup::class,
             'animal' => Animal::class,
@@ -130,5 +146,59 @@ class TransactionsController extends Controller
             'sale' => Sale::class,
             default => throw new InvalidArgumentException('Unsupported transaction target.'),
         };
+    }
+
+    /**
+     * This record's shares of bulk inputs, shaped like ledger rows so the Costs
+     * view can render both from one list.
+     *
+     * These are attributions, not postings — the money already appears in the
+     * ledger once, against the input purchase. Summing `direct` and
+     * `shared_input` rows together gives the cost of this animal; summing them
+     * across every animal would double-count the purchase, which is why they
+     * carry a `source` the caller can group by.
+     *
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    protected function sharedInputCosts(Model $transactionable): \Illuminate\Support\Collection
+    {
+        if (! method_exists($transactionable, 'inputAllocations')) {
+            return collect();
+        }
+
+        return $transactionable->inputAllocations()
+            ->with(['application.farmInput'])
+            ->get()
+            ->filter(fn ($target) => $target->application !== null)
+            ->map(function ($target) {
+                $application = $target->application;
+                $input = $application->farmInput;
+                $unit = $input?->unit ?? 'unit';
+
+                return [
+                    'id' => null,
+                    'uuid' => $target->uuid,
+                    'date' => $application->date?->toDateString(),
+                    'payment_method' => null,
+                    'description' => sprintf(
+                        '%s — %s (share of %s %s)',
+                        $input?->name ?? 'Farm input',
+                        $application->details,
+                        rtrim(rtrim(number_format((float) $application->quantity_used, 3, '.', ''), '0'), '.'),
+                        $unit
+                    ),
+                    'reference_number' => null,
+                    'transaction_for' => 'farm_input',
+                    'transaction_uuid' => $input?->uuid,
+                    'amount' => (float) $target->allocated_cost,
+                    'entry_type' => 'debit',
+                    'account_name' => 'Shared farm input',
+                    'ledger_entries' => [],
+                    'source' => 'shared_input',
+                    'created_at' => $target->created_at?->toISOString(),
+                    'updated_at' => $target->updated_at?->toISOString(),
+                ];
+            })
+            ->values();
     }
 }

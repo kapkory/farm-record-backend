@@ -10,22 +10,75 @@ use App\Http\Resources\Tasks\TaskResource;
 use App\Models\Core\Animal;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\Farm;
+use App\Models\Core\FarmInput;
 use App\Models\Core\Hive;
 use App\Models\Core\Planting;
 use App\Models\Core\Task;
 use App\Models\Core\Treatment;
+use App\Services\Inputs\InputApplicationService;
 use App\Services\Task\TaskExpenseRecorder;
 use App\Traits\ApiResponse;
 use App\Traits\ResolvesClientUuid;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class TasksController extends Controller
 {
     use ApiResponse, ResolvesClientUuid;
 
-    public function __construct(protected TaskExpenseRecorder $taskExpenseRecorder)
+    public function __construct(
+        protected TaskExpenseRecorder $taskExpenseRecorder,
+        protected InputApplicationService $inputApplicationService,
+    ) {
+    }
+
+    /**
+     * Draw a task's materials from bulk stock when an input is supplied, so a
+     * livestock task (dip, deworm) attributes cost and reduces stock instead
+     * of taking a manual amount. Returns true when it handled the cost.
+     */
+    protected function applyTaskInput(Request $request, Task $task, array $validated): bool
     {
+        if (empty($validated['input_uuid'])) {
+            return false;
+        }
+
+        $taskable = $task->taskable;
+
+        if (! ($taskable instanceof Animal || $taskable instanceof AnimalGroup)) {
+            throw ValidationException::withMessages([
+                'input_uuid' => ['Using bulk stock is only available for tasks on an animal or group.'],
+            ]);
+        }
+
+        $input = FarmInput::where('uuid', $validated['input_uuid'])->first();
+        if (! $input || (int) $input->farm_id !== (int) $taskable->farm_id) {
+            throw ValidationException::withMessages([
+                'input_uuid' => ['The selected input is not on this farm.'],
+            ]);
+        }
+
+        $this->inputApplicationService->apply(
+            $input,
+            [
+                'date' => $task->due_date?->toDateString() ?? now()->toDateString(),
+                'quantity_used' => (float) $validated['input_quantity_used'],
+                'allocation_basis' => 'per_head',
+                'details' => $task->title,
+                'notes' => $task->description,
+                'targets' => [[
+                    'type' => $taskable instanceof AnimalGroup ? 'animal_group' : 'animal',
+                    'uuid' => $taskable->uuid,
+                ]],
+            ],
+            $request->user(),
+            (string) Str::orderedUuid(),
+            createTreatment: false,
+        );
+
+        return true;
     }
 
     // ─── Resolve taskable model from short type + uuid ────────────────────────
@@ -205,12 +258,20 @@ class TasksController extends Controller
                 'taskable_id' => $taskableId,
             ]);
 
-            $this->taskExpenseRecorder->recordForTask($request->user(), $task->fresh(), $validated);
+            $task = $task->fresh();
+
+            // Drawing from stock carries the cost via the input allocation, so
+            // the manual expense is skipped to avoid double-counting.
+            if (! $this->applyTaskInput($request, $task, $validated)) {
+                $this->taskExpenseRecorder->recordForTask($request->user(), $task, $validated);
+            }
 
             return $this->successResponse(
                 new TaskResource($task->load(['creator', 'assignee', 'subTasks'])),
                 'Task updated successfully'
             );
+        } catch (ValidationException $e) {
+            return $this->errorResponse('Validation failed', 422, $e->errors());
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to update task', 500, ['exception' => $e->getMessage()]);
         }

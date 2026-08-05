@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Core\Animal;
+use App\Models\Core\AnimalBreed;
+use App\Models\Core\AnimalBreeding;
 use App\Models\Core\AnimalGroup;
 use App\Models\Core\AnimalType;
 use App\Models\Core\Farm;
@@ -130,4 +133,93 @@ function beeTestHive(array $chain, int $sequence, string $code, array $overrides
         'occupancy' => Hive::OCCUPANCY_OCCUPIED,
         'user_id' => $chain['user']->id,
     ], $overrides));
+}
+
+/**
+ * Ownership chain for the birth-registration tests:
+ * User → FarmerUser → Farmer → Farm, plus a female dam and a male sire of the
+ * same type/breed and a pending pregnancy linking them.
+ *
+ * @return array{
+ *     user: User, farmer: Farmer, farm: Farm, type: AnimalType,
+ *     breed: AnimalBreed, dam: Animal, sire: Animal, breeding: AnimalBreeding
+ * }
+ */
+function birthTestChain(array $options = []): array
+{
+    $user = User::factory()->create();
+
+    $farmer = Farmer::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'display_name' => 'Birth Farmer',
+        'type' => 'individual',
+        'status' => 1,
+    ]);
+
+    FarmerUser::create([
+        'farmer_id' => $farmer->id,
+        'user_id' => $user->id,
+        'role' => 'owner',
+        'status' => 1,
+    ]);
+
+    $farm = Farm::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'farmer_id' => $farmer->id,
+        'name' => 'Birth Farm',
+        'location' => 'Eldoret',
+        'type' => 'mixed',
+        'ownership_type' => 'owned',
+        'status' => 1,
+    ]);
+
+    $type = AnimalType::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'name' => $options['type_name'] ?? 'Dairy Cattle',
+        'category' => 'livestock',
+        'tracking_mode' => 'both',
+    ]);
+
+    $breed = AnimalBreed::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'animal_type_id' => $type->id,
+        'name' => 'Friesian',
+        'gestation_days' => $options['gestation_days'] ?? 280,
+    ]);
+
+    $makeAnimal = fn (string $name, string $gender) => Animal::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'farm_id' => $farm->id,
+        'farmer_id' => $farmer->id,
+        'animal_group_id' => $options['animal_group_id'] ?? null,
+        'animal_type_id' => $type->id,
+        'animal_breed_id' => $breed->id,
+        'tag_number' => 'FC-'.str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT),
+        'name' => $name,
+        'gender' => $gender,
+        'status' => 'active',
+        'user_id' => $user->id,
+    ]);
+
+    $dam = $makeAnimal('Bella', 'female');
+    $sire = $makeAnimal('Duke', 'male');
+
+    $breeding = AnimalBreeding::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'farm_id' => $farm->id,
+        'dam_id' => $dam->id,
+        'sire_id' => $sire->id,
+        'sire_type' => 'natural',
+        'service_date' => $options['service_date'] ?? now()->subDays(280)->toDateString(),
+        'status' => 'pending',
+        'user_id' => $user->id,
+    ]);
+
+    return compact('user', 'farmer', 'farm', 'type', 'breed', 'dam', 'sire', 'breeding');
+}
+
+/** URI for the register-birth endpoint of a given breeding. */
+function birthUri(AnimalBreeding $breeding): string
+{
+    return "/api/v1/farms/farm/animals/breedings/{$breeding->uuid}/birth";
 }

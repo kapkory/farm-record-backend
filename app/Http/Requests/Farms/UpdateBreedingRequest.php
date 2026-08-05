@@ -33,6 +33,12 @@ class UpdateBreedingRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            // Marking a pregnancy `born` has to go through Register Birth so
+            // the offspring, birth event and task all get recorded with it.
+            if ($this->input('status') === 'born') {
+                $validator->errors()->add('status', 'Use Register Birth to record a birth.');
+            }
+
             // Only cross-validate sire_type + sire_id when both are provided
             $sireType = $this->input('sire_type');
             $sireId   = $this->input('sire_id');

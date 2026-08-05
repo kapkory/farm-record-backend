@@ -12,6 +12,7 @@ class AnimalBreedingResource extends JsonResource
     {
         $serviceDate      = $this->service_date ? Carbon::parse($this->service_date) : null;
         $expectedBirthDate = $this->expected_birth_date ? Carbon::parse($this->expected_birth_date) : null;
+        $actualBirthDate = $this->actual_birth_date ? Carbon::parse($this->actual_birth_date) : null;
 
         return [
             'uuid'                      => $this->uuid,
@@ -49,6 +50,16 @@ class AnimalBreedingResource extends JsonResource
             'service_date_human'        => $serviceDate?->format('d M Y'),
             'expected_birth_date'       => $expectedBirthDate?->toDateString(),
             'expected_birth_date_human' => $expectedBirthDate?->format('d M Y'),
+            'actual_birth_date'         => $actualBirthDate?->toDateString(),
+            'actual_birth_date_human'   => $actualBirthDate?->format('d M Y'),
+            'offspring_count'           => $this->offspring_count,
+            'stillborn_count'           => (int) ($this->stillborn_count ?? 0),
+            'offspring'                 => $this->whenLoaded('offspring', fn () => $this->offspring->map(fn ($calf) => [
+                'uuid'       => $calf->uuid,
+                'name'       => $calf->name,
+                'tag_number' => $calf->tag_number,
+                'gender'     => $calf->gender,
+            ])->values()),
             'status'                    => $this->status,
             'days_until_birth'          => $this->days_until_birth,
             'is_overdue'                => $this->is_overdue,

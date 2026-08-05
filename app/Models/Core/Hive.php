@@ -41,6 +41,8 @@ class Hive extends Model
         'hive_type',
         'occupancy',
         'installed_date',
+        'colonized_at',
+        'vacated_at',
         'last_inspected_at',
         'last_harvested_at',
         'next_harvest_due',
@@ -52,6 +54,8 @@ class Hive extends Model
     protected $casts = [
         'sequence' => 'integer',
         'installed_date' => 'date',
+        'colonized_at' => 'date',
+        'vacated_at' => 'date',
         'last_inspected_at' => 'date',
         'last_harvested_at' => 'date',
         'next_harvest_due' => 'date',

@@ -22,6 +22,7 @@ class AnimalType extends Model
         'count_label',
         'description',
         'status',
+        'weighing_interval_days',
     ];
 
     public function breeds(): HasMany

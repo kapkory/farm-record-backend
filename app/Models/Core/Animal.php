@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Animal extends Model
@@ -22,6 +23,7 @@ class Animal extends Model
         'animal_breed_id',
         'dam_id',
         'sire_id',
+        'animal_breeding_id',
         'treatment_plan_id',
         'tag_number',
         'name',
@@ -29,7 +31,9 @@ class Animal extends Model
         'date_of_birth',
         'acquisition_date',
         'acquisition_type',
+        'purchase_price',
         'gestation_adjustment_days',
+        'weighing_interval_days',
         'status',
         'notes',
         'user_id',
@@ -38,7 +42,9 @@ class Animal extends Model
     protected $casts = [
         'date_of_birth' => 'date',
         'acquisition_date' => 'date',
-        'gestation_adjustment_days' => 'integer'];
+        'purchase_price' => 'decimal:2',
+        'gestation_adjustment_days' => 'integer',
+        'weighing_interval_days' => 'integer'];
 
     public function farm(): BelongsTo
     {
@@ -73,6 +79,24 @@ class Animal extends Model
     public function events(): MorphMany
     {
         return $this->morphMany(AnimalEvent::class, 'eventable');
+    }
+
+    /** Shares of bulk-purchased inputs (dip, feed, drugs) charged to this record. */
+    public function inputAllocations(): MorphMany
+    {
+        return $this->morphMany(InputApplicationTarget::class, 'targetable');
+    }
+
+    /** Live weight readings, oldest first when ordered. */
+    public function weights(): MorphMany
+    {
+        return $this->morphMany(AnimalWeight::class, 'weighable');
+    }
+
+    /** The most recent reading, for list views and the animal header. */
+    public function latestWeight(): MorphOne
+    {
+        return $this->morphOne(AnimalWeight::class, 'weighable')->latestOfMany('measured_on');
     }
 
     public function ledgerTransactions(): MorphMany
@@ -116,6 +140,12 @@ class Animal extends Model
     public function breed(): BelongsTo
     {
         return $this->animalBreed();
+    }
+
+    /** The pregnancy this animal was born from, when it was recorded here. */
+    public function birthBreeding(): BelongsTo
+    {
+        return $this->belongsTo(AnimalBreeding::class, 'animal_breeding_id');
     }
 
     /** The animal's recorded mother, if known. */

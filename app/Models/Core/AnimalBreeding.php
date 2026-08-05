@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\Animals\GestationEstimator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -19,8 +20,12 @@ class AnimalBreeding extends Model
         'sire_type',
         'service_date',
         'expected_birth_date',
+        'actual_birth_date',
+        'offspring_count',
+        'stillborn_count',
         'status',
         'birth_event_id',
+        'birth_task_id',
         'ai_straw_code',
         'ai_bull_name',
         'ai_technician',
@@ -31,6 +36,9 @@ class AnimalBreeding extends Model
     protected $casts = [
         'service_date' => 'date',
         'expected_birth_date' => 'date',
+        'actual_birth_date' => 'date',
+        'offspring_count' => 'integer',
+        'stillborn_count' => 'integer',
     ];
 
     public const SIRE_TYPES = [
@@ -106,6 +114,22 @@ class AnimalBreeding extends Model
     public function sire(): BelongsTo
     {
         return $this->belongsTo(Animal::class, 'sire_id');
+    }
+
+    /**
+     * The reminder task for this pregnancy's expected birth date
+     */
+    public function birthTask(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'birth_task_id');
+    }
+
+    /**
+     * Animals born from this pregnancy
+     */
+    public function offspring(): HasMany
+    {
+        return $this->hasMany(Animal::class, 'animal_breeding_id');
     }
 
     /**

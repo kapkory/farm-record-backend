@@ -44,10 +44,13 @@ class TreatmentExpenseRecorder
         }
 
         $treatmentType = TreatmentType::query()->find($validated['treatment_type_id']);
-        $preferredAccounts = ['Fertilizer & Chemicals', 'Veterinary', 'Labor'];
+        // Names must match the seeded chart of accounts (LedgerAccountsSeeder)
+        // exactly, or the whereIn matches nothing and the whole treatment save
+        // fails — which is why livestock treatment expenses silently 422'd.
+        $preferredAccounts = ['Fertilizer & Chemicals', 'Veterinary & Medicine', 'Labour'];
 
         if ($treatmentType?->type === 'livestock') {
-            $preferredAccounts = ['Veterinary', 'Labor'];
+            $preferredAccounts = ['Veterinary & Medicine', 'Labour'];
         }
 
         $expenseAccount = LedgerAccount::query()
@@ -59,8 +62,8 @@ class TreatmentExpenseRecorder
             })
             ->orderByRaw("CASE name
                 WHEN 'Fertilizer & Chemicals' THEN 1
-                WHEN 'Veterinary' THEN 2
-                WHEN 'Labor' THEN 3
+                WHEN 'Veterinary & Medicine' THEN 2
+                WHEN 'Labour' THEN 3
                 ELSE 99 END")
             ->orderByDesc('farmer_id')
             ->first();

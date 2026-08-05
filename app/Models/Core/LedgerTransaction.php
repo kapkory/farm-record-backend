@@ -21,6 +21,7 @@ class LedgerTransaction extends Model
         'reference_number',
         'transactionable_type',
         'transactionable_id',
+        'scope',
         'farmer_id',
     ];
 

@@ -3,16 +3,21 @@
 namespace App\Providers;
 
 use App\Models\Core\Animal;
+use App\Models\Core\AnimalBreeding;
 use App\Models\Core\AnimalEvent;
 use App\Models\Core\AnimalGroup;
+use App\Models\Core\AnimalWeight;
 use App\Models\Core\Farm;
+use App\Models\Core\FarmInput;
 use App\Models\Core\Hive;
 use App\Models\Core\Planting;
 use App\Models\Core\Sale;
 use App\Models\Core\Treatment;
+use App\Observers\AnimalBreedingObserver;
 use App\Observers\AnimalEventObserver;
 use App\Observers\AnimalGroupObserver;
 use App\Observers\AnimalObserver;
+use App\Observers\AnimalWeightObserver;
 use App\Observers\HiveObserver;
 use App\Observers\PlantingObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -46,12 +51,17 @@ class AppServiceProvider extends ServiceProvider
             'treatment' => Treatment::class,
             'hive' => Hive::class,
             'sale' => Sale::class,
+            'breeding' => AnimalBreeding::class,
+            'animal_weight' => AnimalWeight::class,
+            'farm_input' => FarmInput::class,
         ]);
 
         Planting::observe(PlantingObserver::class);
         AnimalEvent::observe(AnimalEventObserver::class);
         AnimalGroup::observe(AnimalGroupObserver::class);
         Animal::observe(AnimalObserver::class);
+        AnimalBreeding::observe(AnimalBreedingObserver::class);
+        AnimalWeight::observe(AnimalWeightObserver::class);
         Hive::observe(HiveObserver::class);
     }
 }

@@ -34,6 +34,7 @@ class StoreAnimalRequest extends FormRequest
             'date_of_birth' => ['nullable', 'date'],
             'acquisition_date' => ['nullable', 'date'],
             'acquisition_type' => ['nullable', 'in:born,purchased,donated,transferred'],
+            'purchase_price' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
             'status' => ['nullable', 'in:active,sold,deceased,transferred'],
             'notes' => ['nullable', 'string'],
         ];

@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Farms\Farm;
 
 use App\Services\Animals\GestationEstimator;
+use App\Services\Animals\WeighingIntervalResolver;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,8 +25,14 @@ class AnimalResource extends JsonResource
             'age_human' => $dateOfBirth?->diffForHumans(),
             'acquisition_date' => $this->acquisition_date?->toDateString(),
             'acquisition_type' => $this->acquisition_type,
-            'weight' => $this->weight !== null ? (float) $this->weight : null,
-            'weight_unit' => $this->weight_unit,
+            // Live weight comes from animal_weights, not a column on the
+            // animal: what matters is the series, and the latest reading is
+            // just the head of it.
+            'latest_weight_kg' => $this->whenLoaded('latestWeight', fn () => $this->latestWeight?->weight_kg !== null
+                ? (float) $this->latestWeight->weight_kg
+                : null),
+            'latest_weighed_on' => $this->whenLoaded('latestWeight', fn () => $this->latestWeight?->measured_on?->toDateString()),
+            'weighing_interval_days' => app(WeighingIntervalResolver::class)->daysFor($this->resource),
             'status' => $this->status,
             'notes' => $this->notes,
             'is_standalone' => $this->is_standalone,
