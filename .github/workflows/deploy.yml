@@ -13,20 +13,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Push code to server via rsync
-        uses: burnett01/rsync-deployments@7.0.1
-        with:
-          switches: -avzr --delete --exclude='.git' --exclude='.env' --exclude='vendor' --exclude='node_modules' --exclude='storage/logs'
-          path: ./
-          remote_path: ${{ secrets.DEPLOY_PATH }}
-          remote_host: ${{ secrets.DEPLOY_HOST }}
-          remote_user: ${{ secrets.DEPLOY_USER }}
-          remote_key: ${{ secrets.DEPLOY_SSH_KEY }}
-
-      - name: Run build and migrate on server
+      - name: Run deploy.sh on server
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -35,6 +22,6 @@ jobs:
           command_timeout: 60m   # docker builds can be slow
           script: |
             set -e
-            APP_DIR="${{ secrets.DEPLOY_PATH }}"
+            APP_DIR="$HOME/farm-record"
             cd "$APP_DIR"
             ./deploy.sh --build --migrate
