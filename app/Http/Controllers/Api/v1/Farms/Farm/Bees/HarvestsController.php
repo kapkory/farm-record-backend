@@ -7,6 +7,7 @@ use App\Http\Requests\Bees\StoreHarvestRequest;
 use App\Models\Core\Farm;
 use App\Models\Core\Hive;
 use App\Models\Core\Production;
+use App\Models\Core\Sale;
 use App\Services\Bees\HiveHarvestService;
 use App\Traits\ApiResponse;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -47,14 +48,38 @@ class HarvestsController extends Controller
             ->where('productionable_type', (new Hive)->getMorphClass())
             ->whereIn('productionable_id', $hiveIds)
             ->whereNotNull('trace_number')
-            ->with('productionable')
+            ->with([
+                'productionable',
+                // Only live sales count as sold — a voided sale puts the
+                // harvest back on the shelf.
+                'saleItems' => fn ($q) => $q->whereHas('sale', fn ($s) => $s->where('status', '!=', Sale::STATUS_VOID)),
+            ])
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->limit(500)
             ->get();
 
-        $sessions = $rows->groupBy('trace_number')->map(function ($group, $traceNumber) {
+        $showsMoney = (bool) $request->user()?->canViewFinances();
+
+        $sessions = $rows->groupBy('trace_number')->map(function ($group, $traceNumber) use ($showsMoney) {
+            // A session covers several hives and products, so it can be
+            // partly sold. Counting production rows rather than quantities
+            // keeps this honest across mixed units (kg of honey, g of pollen).
+            $soldRows = $group->filter(fn ($row) => $row->saleItems->isNotEmpty());
+            $saleStatus = match (true) {
+                $soldRows->isEmpty() => 'unsold',
+                $soldRows->count() === $group->count() => 'sold',
+                default => 'part',
+            };
+
             return [
+                'sale_status' => $saleStatus,
+                'sold_line_count' => $soldRows->count(),
+                'line_count' => $group->count(),
+                // The money stays with owners and managers.
+                'sale_total' => $showsMoney
+                    ? round($group->flatMap->saleItems->sum('line_total'), 2)
+                    : null,
                 // The session uuid doubles as the record key for the
                 // offline cache on the frontend.
                 'uuid' => $traceNumber,

@@ -34,7 +34,18 @@ class SalesController extends Controller
         $farm = Farm::query()
             ->farmerOwned($user->id)
             ->where('uuid', $request->validated('farm_uuid'))
-            ->firstOrFail();
+            ->first();
+
+        // A bare 404 here is misleading — the usual cause is a sale queued
+        // against a farm this account cannot reach (a stale offline cache, or
+        // a different sign-in on the same device). Say so.
+        if (! $farm) {
+            return $this->errorResponse(
+                'That farm is not available to your account, so this sale cannot be saved against it.',
+                422,
+                ['farm_uuid' => ['Choose a farm you have access to.']]
+            );
+        }
 
         // A replayed offline create must answer from the stored sale before
         // the service runs, or money would be posted twice.

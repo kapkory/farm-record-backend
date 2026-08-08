@@ -10,6 +10,9 @@ class Plan extends Model
 {
     use SoftDeletes;
 
+    /** The plan every new farmer starts on while the product is in testing. */
+    public const DEFAULT_SLUG = 'free-trial';
+
     protected $fillable = [
         'uuid',
         'name',
@@ -41,6 +44,17 @@ class Plan extends Model
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * The plan to put a new farmer on when they don't choose one. Falls back
+     * to the cheapest active plan so registration never silently ends up with
+     * no subscription if the default is ever renamed or deactivated.
+     */
+    public static function default(): ?self
+    {
+        return static::query()->where('slug', self::DEFAULT_SLUG)->where('is_active', true)->first()
+            ?? static::query()->where('is_active', true)->orderBy('sort_order')->orderBy('price')->first();
     }
 
     /** Days added to the paid-through date when a payment for this plan lands. */

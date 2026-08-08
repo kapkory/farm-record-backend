@@ -296,7 +296,10 @@ it('hides other farmers sales and rejects foreign farms', function () {
         'status' => 1,
     ]);
 
-    // A stranger cannot sell from someone else's farm.
+    // A stranger cannot sell from someone else's farm. Rejected as a
+    // validation error rather than a bare 404 so an offline replay can tell
+    // the farmer what went wrong; the response is identical whether the farm
+    // is foreign or does not exist, so nothing is disclosed either way.
     $this->actingAs($stranger, 'sanctum')->postJson(SALES_BASE_URI, [
         'farm_uuid' => $farm->uuid,
         'date' => '2026-07-10',
@@ -304,7 +307,7 @@ it('hides other farmers sales and rejects foreign farms', function () {
         'items' => [
             ['category' => 'other', 'product' => 'manure', 'quantity' => 1, 'unit_price' => 500],
         ],
-    ])->assertNotFound();
+    ])->assertStatus(422)->assertJsonValidationErrors(['farm_uuid']);
 
     // Nor see the owner's sales.
     $this->actingAs($user, 'sanctum')->postJson(SALES_BASE_URI, [

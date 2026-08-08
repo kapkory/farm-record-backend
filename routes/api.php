@@ -5,7 +5,20 @@ use Illuminate\Support\Facades\Route;
 
 // Include auth routes (login, register, etc.)
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-   return $request->user()->only(['uuid', 'name', 'email', 'is_superadmin', 'must_change_password']);
+    $user = $request->user();
+
+    // The frontend gates finance screens and farm pickers on these. They are a
+    // convenience for the UI only — the API enforces the same rules itself.
+    $allowedFarmIds = $user->allowedFarmIds();
+
+    return $user->only(['uuid', 'name', 'email', 'is_superadmin', 'must_change_password']) + [
+        'role' => $user->farmerRole(),
+        'can_view_finances' => $user->canViewFinances(),
+        // null means "every farm they can reach"; a list pins them to those.
+        'allowed_farm_uuids' => $allowedFarmIds === null
+            ? null
+            : \App\Models\Core\Farm::whereIn('id', $allowedFarmIds)->pluck('uuid')->all(),
+    ];
 });
 
 // Public plan catalogue — the register page shows plans before any login.

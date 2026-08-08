@@ -9,11 +9,34 @@ use Illuminate\Support\Str;
 class PlansSeeder extends Seeder
 {
     /**
-     * The three tiers from the marketing page, localised to KES.
+     * While the product is in testing every new farmer lands on the free
+     * six-month plan below, which carries no limits. The paid tiers stay
+     * defined but inactive so they can be switched on later without a
+     * migration — see $paidTiersActive.
      *
      * @var array<int, array<string, mixed>>
      */
     protected array $plans = [
+        [
+            'name' => 'Free Trial',
+            'slug' => 'free-trial',
+            'description' => 'Full access to everything while we are in testing. Six months free, no payment details needed.',
+            'price' => 0,
+            'interval' => 'monthly',
+            // Six months.
+            'trial_days' => 180,
+            'max_farms' => null,
+            'max_animals' => null,
+            'max_users' => null,
+            'features' => [
+                'Every feature, no limits',
+                'Unlimited farms, animals and team members',
+                'Crops, livestock, bees and beekeeping',
+                'Sales, costs and profitability',
+                'Offline mobile app',
+            ],
+            'sort_order' => 0,
+        ],
         [
             'name' => 'Starter',
             'slug' => 'starter',
@@ -71,11 +94,17 @@ class PlansSeeder extends Seeder
         ],
     ];
 
+    /** Flip to true once the paid tiers should be offered again. */
+    protected bool $paidTiersActive = false;
+
     public function run(): void
     {
         foreach ($this->plans as $plan) {
             $model = Plan::firstOrNew(['slug' => $plan['slug']]);
-            $model->fill(array_merge($plan, ['currency' => 'KES', 'is_active' => true]));
+            $model->fill(array_merge($plan, [
+                'currency' => 'KES',
+                'is_active' => $plan['slug'] === Plan::DEFAULT_SLUG ? true : $this->paidTiersActive,
+            ]));
             $model->uuid ??= (string) Str::orderedUuid();
             $model->save();
         }

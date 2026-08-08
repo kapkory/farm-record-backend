@@ -54,12 +54,17 @@ class RegisteredUserController extends Controller
 
         $user->farmers()->attach($farmer->id, ['role' => 'owner', 'status' => 1]);
 
-        // Start the chosen plan's free trial right away.
-        if ($request->filled('plan_uuid')) {
-            $plan = Plan::where('uuid', $request->string('plan_uuid'))->where('is_active', true)->first();
-            if ($plan) {
-                app(SubscriptionService::class)->subscribe($farmer, $plan);
-            }
+        // Start a trial right away. A named plan wins; otherwise everyone
+        // lands on the default (the free six-month plan while we are testing),
+        // so no farmer ends up without a subscription.
+        $plan = $request->filled('plan_uuid')
+            ? Plan::where('uuid', $request->string('plan_uuid'))->where('is_active', true)->first()
+            : null;
+
+        $plan ??= Plan::default();
+
+        if ($plan) {
+            app(SubscriptionService::class)->subscribe($farmer, $plan);
         }
 
         DB::commit();

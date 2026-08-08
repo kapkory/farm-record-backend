@@ -21,6 +21,9 @@ class FarmInputResource extends JsonResource
             return $used->isEmpty() ? null : round((float) $used->avg(), 3);
         }, null);
 
+        // Staff logins may see and draw down stock, but not what it cost.
+        $showsMoney = (bool) $request->user()?->canViewFinances();
+
         return [
             'uuid' => $this->uuid,
             'name' => $this->name,
@@ -32,8 +35,8 @@ class FarmInputResource extends JsonResource
             'quantity_remaining' => $remaining,
             'quantity_used' => $this->quantity_used,
             'is_depleted' => $this->is_depleted,
-            'total_cost' => (float) $this->total_cost,
-            'unit_cost' => (float) $this->unit_cost,
+            'total_cost' => $showsMoney ? (float) $this->total_cost : null,
+            'unit_cost' => $showsMoney ? (float) $this->unit_cost : null,
             'purchase_date' => $purchaseDate?->toDateString(),
             'purchase_date_human' => $purchaseDate?->format('d M Y'),
             'supplier' => $this->supplier,

@@ -30,16 +30,20 @@ function billingContext(bool $superadmin = false): array
 it('lists active plans to any authenticated farmer', function () {
     [$user] = billingContext();
 
+    // While the product is in testing only the free six-month plan is on offer.
     $this->actingAs($user, 'sanctum')
         ->getJson('/api/v1/billing/plans')
         ->assertOk()
-        ->assertJsonCount(3, 'data')
-        ->assertJsonPath('data.0.name', 'Starter')
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.name', 'Free Trial')
         ->assertJsonPath('data.0.currency', 'KES');
 });
 
 it('starts a trial when a farmer subscribes to a plan', function () {
     [$user, $farmer] = billingContext();
+    // Paid tiers are seeded inactive for now; switching one on makes it
+    // subscribable again, which is what this covers.
+    Plan::where('slug', 'professional')->update(['is_active' => true]);
     $plan = Plan::where('slug', 'professional')->first();
 
     $this->actingAs($user, 'sanctum')
@@ -197,6 +201,7 @@ it('archives a plan with subscribers instead of deleting it', function () {
 
 it('starts a trial for the plan chosen at registration', function () {
     test()->seed(PlansSeeder::class);
+    Plan::where('slug', 'professional')->update(['is_active' => true]);
     $plan = Plan::where('slug', 'professional')->first();
 
     $this->postJson('/register', [
@@ -221,6 +226,7 @@ it('serves the plan catalogue publicly for the register page', function () {
 
     $this->getJson('/api/v1/public/plans')
         ->assertOk()
-        ->assertJsonCount(3, 'data')
-        ->assertJsonPath('data.0.trial_days', 14);
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.slug', 'free-trial')
+        ->assertJsonPath('data.0.trial_days', 180);
 });

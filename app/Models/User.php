@@ -66,4 +66,55 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Farmer::class, 'farmer_users', 'user_id', 'farmer_id');
     }
+
+    /**
+     * Farms this user is pinned to. Empty means unrestricted — see the
+     * farm_user migration; owners and managers normally have no rows.
+     */
+    public function assignedFarms(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Core\Farm::class, 'farm_user', 'user_id', 'farm_id');
+    }
+
+    /**
+     * This user's role on their farmer (owner|manager|staff). Superadmins are
+     * treated as owners. Null when the user belongs to no farmer at all.
+     */
+    public function farmerRole(): ?string
+    {
+        if ($this->isSuperAdmin()) {
+            return 'owner';
+        }
+
+        return \App\Models\Core\FarmerUser::query()
+            ->where('user_id', $this->id)
+            ->orderByRaw("CASE role WHEN 'owner' THEN 1 WHEN 'manager' THEN 2 ELSE 3 END")
+            ->value('role');
+    }
+
+    /** Only owners and managers may see money: totals, sales, costs. */
+    public function canViewFinances(): bool
+    {
+        return in_array($this->farmerRole(), ['owner', 'manager'], true);
+    }
+
+    /**
+     * Farm ids this user may see, or null for "no restriction". Null rather
+     * than a list so callers can skip the filter entirely for owners.
+     *
+     * @return array<int, int>|null
+     */
+    public function allowedFarmIds(): ?array
+    {
+        if ($this->isSuperAdmin()) {
+            return null;
+        }
+
+        $ids = \Illuminate\Support\Facades\DB::table('farm_user')
+            ->where('user_id', $this->id)
+            ->pluck('farm_id')
+            ->all();
+
+        return $ids === [] ? null : $ids;
+    }
 }

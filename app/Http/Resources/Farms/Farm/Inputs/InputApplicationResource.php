@@ -17,7 +17,8 @@ class InputApplicationResource extends JsonResource
             'date' => $date?->toDateString(),
             'date_human' => $date?->format('d M Y'),
             'quantity_used' => (float) $this->quantity_used,
-            'total_cost' => (float) $this->total_cost,
+            // Staff see the usage, not the money it represents.
+            'total_cost' => $request->user()?->canViewFinances() ? (float) $this->total_cost : null,
             'allocation_basis' => $this->allocation_basis,
             'details' => $this->details,
             'notes' => $this->notes,
