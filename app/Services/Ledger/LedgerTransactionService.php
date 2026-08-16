@@ -47,8 +47,8 @@ class LedgerTransactionService
                 'farmer_id' => $dto->farmerId,
             ]);
 
-            $primaryEffect = $this->postingRuleResolver->effectForPrimaryAccount($dto->transactionType);
-            $contraEffect = $this->postingRuleResolver->contraEffect($dto->transactionType);
+            $primaryEffect = $this->postingRuleResolver->effectForPrimaryAccount($dto->transactionType, $dto->effect);
+            $contraEffect = $this->postingRuleResolver->contraEffect($dto->transactionType, $primaryEffect);
 
             $entries = [
                 [

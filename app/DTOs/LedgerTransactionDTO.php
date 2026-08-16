@@ -24,6 +24,10 @@ readonly class LedgerTransactionDTO
         // Which part of the farm a whole-farm expense belongs to
         // (general|livestock|crops). Null for record-level transactions.
         public ?string $scope = null,
+        // Which way the recorded account moves. Only balance-sheet types use
+        // 'decrease': selling equipment, repaying a loan, or the owner taking
+        // money out of the farm.
+        public string $effect = 'increase',
     ) {}
 
     public static function fromRequest(array $validated, int $farmerId, int $farmId): self
@@ -46,6 +50,7 @@ readonly class LedgerTransactionDTO
             unitCost: isset($entry['unit_cost']) ? (float) $entry['unit_cost'] : null,
             uuid: $validated['uuid'] ?? null,
             scope: $validated['scope'] ?? null,
+            effect: $validated['effect'] ?? 'increase',
         );
     }
 }

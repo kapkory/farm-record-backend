@@ -1,5 +1,6 @@
 <?php
 
+use App\DTOs\LedgerTransactionDTO;
 use App\Models\Core\Animal;
 use App\Models\Core\AnimalBreed;
 use App\Models\Core\AnimalBreeding;
@@ -9,7 +10,11 @@ use App\Models\Core\Farm;
 use App\Models\Core\Farmer;
 use App\Models\Core\FarmerUser;
 use App\Models\Core\Hive;
+use App\Models\Core\LedgerAccount;
+use App\Models\Core\LedgerTransaction;
 use App\Models\User;
+use App\Services\Ledger\LedgerTransactionService;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -222,4 +227,81 @@ function birthTestChain(array $options = []): array
 function birthUri(AnimalBreeding $breeding): string
 {
     return "/api/v1/farms/farm/animals/breedings/{$breeding->uuid}/birth";
+}
+
+/**
+ * Ownership chain for the financial statement tests: an owner with two farms,
+ * plus a staff login pinned to farm A (money must stay out of their reach).
+ *
+ * @return array{owner: User, staff: User, farmer: Farmer, farmA: Farm, farmB: Farm}
+ */
+function ledgerReportChain(string $displayName = 'Report Farmer'): array
+{
+    $owner = User::factory()->create();
+
+    $farmer = Farmer::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'display_name' => $displayName,
+        'type' => 'individual',
+        'status' => 1,
+    ]);
+
+    FarmerUser::create(['farmer_id' => $farmer->id, 'user_id' => $owner->id, 'role' => 'owner', 'status' => 1]);
+
+    $makeFarm = fn (string $name) => Farm::create([
+        'uuid' => (string) Str::orderedUuid(),
+        'farmer_id' => $farmer->id,
+        'name' => $name,
+        'location' => 'Nakuru',
+        'type' => 'mixed',
+        'ownership_type' => 'owned',
+        'status' => 1,
+    ]);
+
+    $farmA = $makeFarm('Farm A');
+    $farmB = $makeFarm('Farm B');
+
+    $staff = User::factory()->create();
+    FarmerUser::create(['farmer_id' => $farmer->id, 'user_id' => $staff->id, 'role' => 'staff', 'status' => 1]);
+    $staff->assignedFarms()->sync([$farmA->id]);
+
+    return compact('owner', 'staff', 'farmer', 'farmA', 'farmB');
+}
+
+/** A seeded system account by its farmer-facing name. */
+function ledgerReportAccount(string $name): LedgerAccount
+{
+    return LedgerAccount::query()->whereNull('farmer_id')->where('name', $name)->firstOrFail();
+}
+
+/**
+ * Posts through the real ledger service so statements are read from the same
+ * debit/credit rows the app writes in production.
+ */
+function postLedgerReportTransaction(
+    User $user,
+    Farm $farm,
+    string $type,
+    string $accountName,
+    float $amount,
+    string $date,
+    string $paymentMethod = 'cash',
+    string $effect = 'increase',
+): LedgerTransaction {
+    return app(LedgerTransactionService::class)->store($user, new LedgerTransactionDTO(
+        farmerId: $farm->farmer_id,
+        farmId: $farm->id,
+        date: Carbon::parse($date),
+        paymentMethod: $paymentMethod,
+        transactionType: $type,
+        ledgerAccountId: ledgerReportAccount($accountName)->id,
+        amount: $amount,
+        description: "{$accountName} {$date}",
+        referenceNumber: null,
+        transactionFor: 'farm',
+        transactionUuid: $farm->uuid,
+        quantity: null,
+        unitCost: null,
+        effect: $effect,
+    ));
 }
