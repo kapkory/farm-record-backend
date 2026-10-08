@@ -19,6 +19,7 @@ CREATE TABLE fields (
     FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE
 );
 
+
 -- Crops
 CREATE TABLE crops (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
